@@ -315,6 +315,7 @@ tool =
                 if not (data[levelCmp]? and puzzle?)
                     console.log(data[levelCmp], puzzle)
                 if @isSameLevel(data[levelCmp], puzzle)
+                    hasFoundArr.push levelCmp
                     sameLevel.push levelCmp
             if sameLevel.length > 1
                 sameLevelArr.push(sameLevel) 
