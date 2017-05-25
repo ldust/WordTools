@@ -292,7 +292,104 @@ tool =
                 i++
             wstream.end()
         )
-        
+    isArrayIncludeEachOther: (arr1, arr2)->
+        for item1 in arr1
+            if item1 in arr2
+                return true
+        return false
+    getAllSameLevel: (table)->
+        data = @getPuzzleData(table)
+        puzzleCount = Object.keys(data).length
+
+        sameLevelArr = []
+
+        hasFoundArr = []
+
+        for level, puzzle of data
+            sameLevel = []
+            hasFoundArr.push level
+            sameLevel.push level
+
+            for levelCmp ,puzzleCmp of data
+                continue if levelCmp in hasFoundArr
+                if not (data[levelCmp]? and puzzle?)
+                    console.log(data[levelCmp], puzzle)
+                if @isSameLevel(data[levelCmp], puzzle)
+                    sameLevel.push levelCmp
+            if sameLevel.length > 1
+                sameLevelArr.push(sameLevel) 
+                #console.log("#{JSON.stringify(sameLevel)}")
+
+        console.log("same level start--------------")
+        for sameLevel in sameLevelArr
+            console.log("#{sameLevel}")
+        console.log("same level end--------------")
+        return sameLevelArr
+
+    getPuzzleData: (table)->
+        # dataStr = fs.readFileSync path, {encoding: "utf8"}
+        # data = JSON.parse(dataStr)
+        data = @handleCsv(table)
+        return data
+
+    isSameLevel: (puzzle1, puzzle2)->
+        ans1 = puzzle1.ans
+        ans2 = puzzle2.ans
+        return @isSameArr(ans1, ans2)
+
+    isSameArr: (arr1, arr2)->
+        for item in arr1
+            if item not in arr2
+                return false
+        for item in arr2
+            if item not in arr1
+                return false
+        return true
+
+    findSameLevel: ->
+        parseCsv(PUZZLE_FILE_PATH, @getAllSameLevel.bind(@)) 
+
+    toUpperCase: (word)->
+        wordUpperCase = ""
+        for c in word
+            wordUpperCase += c if c is "ß"
+            wordUpperCase += c.toUpperCase() if c isnt "ß"
+        return wordUpperCase
+
+    handleCsv: (table) ->
+        outPut = {}
+        for row, column in table
+            id = row[0]
+            continue if id[0] is "#"
+            newRow = {}
+            outPut[id] = newRow
+            pattern = row[3]
+            bonus = row[2]
+            newRow.bn = parseInt(bonus) or 0
+            newRow.tp = pattern
+            newRow.ans = []
+            newRow.add = []
+            for item, index in row
+                continue if empty(item)
+                item = item.trim()
+                if item.match(/\s/img)?
+                    throw new Error("Word Contain SpaceChar Error In Row #{column}")
+                if 0 <= index - 4 < pattern.length
+                    newRow.ans.push @toUpperCase(item)
+                else if index - 4 >= pattern.length
+                    newRow.add.push @toUpperCase(item)
+
+            newRow.ans.sort(@cmp)
+            for item, index in newRow.ans
+                if item.length isnt parseInt(pattern[index])
+                    throw new Error("item not fix pattern #{id}")
+
+            if newRow.ans.length is 0 or (newRow.ans.length isnt pattern.length)
+                throw new Error("Level Table Error In Row #{column}")
+
+            if @isArrayIncludeEachOther(newRow.ans, newRow.add)
+                throw new Error("Level Table Error In Row #{column}: Item in Ans is also in Add")
+        return outPut     
 
 if cmd is "extra"
     tool.fillExtra()
@@ -304,6 +401,9 @@ else if cmd is "prepare_word"
     tool.order()
 else if cmd is "create_puzzle"
     tool.createPuzzle()
+
+else if cmd is "same_level"
+    tool.findSameLevel()
 else
     str = """
     raw_big_word_list.csv -> 大词库
@@ -335,6 +435,11 @@ else
     coffee tool.coffee -c extra
 
     用big_word_list.csv给level_words.csv填充额外词
+    ----------------------------------------------------------
+    ----------------------------------------------------------
+    coffee tool.coffee -c same_level
+
+    使用关卡文件level_puzzle_out.csv，检测文件中重复的关卡，输出信息中每行代表同一组重复关卡号
     ----------------------------------------------------------
 
     """
