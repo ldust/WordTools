@@ -149,9 +149,12 @@ tool =
                 count3++ if w is ccc
             continue if count3 isnt c3
 
+            chars = tool.allChars(pt).sort()
+
             extra = []
             for w in diff
-                extra.push(w) if w.length in pattern
+                if w.length in pattern
+                    extra.push(w)
             
             pt.sort(tool.cmp)
 
@@ -205,7 +208,7 @@ tool =
             if index is -1
                 return false
             else
-                big = big.replace(c,"")
+                big = big.replace(c, "")
         return true
 
     findExtraInBigList: (words, extra, rowIndex, pt) ->
@@ -321,10 +324,8 @@ tool =
                 sameLevelArr.push(sameLevel) 
                 #console.log("#{JSON.stringify(sameLevel)}")
 
-        console.log("same level start--------------")
         for sameLevel in sameLevelArr
             console.log("#{sameLevel}")
-        console.log("same level end--------------")
         return sameLevelArr
 
     getPuzzleData: (table)->
@@ -348,7 +349,17 @@ tool =
         return true
 
     findSameLevel: ->
-        parseCsv(PUZZLE_FILE_PATH, @getAllSameLevel.bind(@)) 
+        parseCsv(PUZZLE_FILE_PATH, @getAllSameLevel.bind(@))
+
+    printAllChars: ->
+        parseCsv PUZZLE_FILE_PATH, (table) ->
+            data = tool.getPuzzleData(table)
+            wstream = fs.createWriteStream PUZZLE_FILE_PATH + ".info.csv"
+            for level, puzzle of data
+                chars = tool.allChars(puzzle.ans).sort()
+                wstream.write level + "," + chars.join("") + "\n"
+            wstream.end()
+        return
 
     toUpperCase: (word)->
         wordUpperCase = ""
@@ -403,8 +414,10 @@ else if cmd is "prepare_word"
 else if cmd is "create_puzzle"
     tool.createPuzzle()
 
-else if cmd is "same_level"
+else if cmd is "info"
     tool.findSameLevel()
+    tool.printAllChars()
+
 else
     str = """
     raw_big_word_list.csv -> 大词库
@@ -412,36 +425,24 @@ else
     level_words.csv       -> 关卡表
     都是一列的表格
 
-    ----------------------------------------------------------
+
     coffee tool.coffee -c prepare_word
+        把raw_level_words.csv转化成level_words.csv level_words.csv是分组过的单词表
 
-    把raw_level_words.csv转化成level_words.csv
-    level_words.csv是分组过的单词表
-    ----------------------------------------------------------
     coffee tool.coffee -c prepare_level
+        用level_words.csv生成临时文件 每次小词库更新要重新生成(这个操作很慢，耐心等待)
 
-    用level_words.csv生成临时文件 每次小词库更新要重新生成
-    这个很慢
-    ----------------------------------------------------------
     coffee tool.coffee -c create_puzzle
+        生成关卡
 
-    生成关卡 
-    ----------------------------------------------------------
-    ----------------------------------------------------------
     coffee tool.coffee -c prepare_extra
+        用raw_big_word_list.csv生成big_word_list.csv big_word_list.csv是符合字母规定（2-8个字母）的单词
 
-    用raw_big_word_list.csv生成big_word_list.csv
-    big_word_list.csv是符合字母规定（2-8个字母）的单词
-    ----------------------------------------------------------
     coffee tool.coffee -c extra
+        用big_word_list.csv给level_words.csv填充额外词
 
-    用big_word_list.csv给level_words.csv填充额外词
-    ----------------------------------------------------------
-    ----------------------------------------------------------
-    coffee tool.coffee -c same_level
-
-    使用关卡文件level_puzzle_out.csv，检测文件中重复的关卡，输出信息中每行代表同一组重复关卡号
-    ----------------------------------------------------------
+    coffee tool.coffee -c info
+        使用关卡文件level_puzzle_out.csv，检测文件中重复的关卡，输出信息中每行代表同一组重复关卡号，同时输出每关用的字母
 
     """
     console.log str
