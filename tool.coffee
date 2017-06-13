@@ -5,6 +5,7 @@ zim     = require './ZimUtils'
 _       = require 'lodash'
 
 cmd     = argv.c
+opt     = argv.o
 
 WORD_FILE_PATH          = "./tables/level_words.csv"
 PUZZLE_FILE_PATH        = "./tables/level_puzzle_out.csv"
@@ -15,8 +16,7 @@ RAW_WORD_FILE_PATH      = "./tables/raw_level_words.csv"
 Dict                    = {}
 PATTERN_INDEX           = 3
 ANS_START_INDEX         = 4
-EXTRA_START_INDEX       = 15
-
+EXTRA_START_INDEX       = opt or 15
 
 contain = (wordA, wordB)->
     return false if wordA is wordB
@@ -228,8 +228,6 @@ tool =
         return ret
 
     addExtra: (table) ->
-        console.log table.length
-
         tool.big = {}
         for row in table
             for cell in row
@@ -244,6 +242,7 @@ tool =
                 extra = []
                 pt = row[PATTERN_INDEX].split("").map((item)-> parseInt(item))
                 for cell, col in row
+                    cell = cell.toLowerCase()
                     continue if col < ANS_START_INDEX
                     if col >= EXTRA_START_INDEX
                         row = row.slice(0, col)
