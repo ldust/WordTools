@@ -5,7 +5,6 @@ zim     = require './ZimUtils'
 _       = require 'lodash'
 
 cmd     = argv.c
-opt     = argv.o
 
 WORD_FILE_PATH          = "./tables/level_words.csv"
 PUZZLE_FILE_PATH        = "./tables/level_puzzle_out.csv"
@@ -16,7 +15,7 @@ RAW_WORD_FILE_PATH      = "./tables/raw_level_words.csv"
 Dict                    = {}
 PATTERN_INDEX           = 3
 ANS_START_INDEX         = 4
-EXTRA_START_INDEX       = opt or 15
+EXTRA_START_INDEX       = 100
 
 contain = (wordA, wordB)->
     return false if wordA is wordB
