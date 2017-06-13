@@ -355,9 +355,17 @@ tool =
         parseCsv PUZZLE_FILE_PATH, (table) ->
             data = tool.getPuzzleData(table)
             wstream = fs.createWriteStream PUZZLE_FILE_PATH + ".info.csv"
+            lvmap = {}
             for level, puzzle of data
                 chars = tool.allChars(puzzle.ans).sort()
-                wstream.write level + "," + chars.join("") + "\n"
+                charsStr = chars.join("")
+                wstream.write level + "," + charsStr + "\n"
+                lvmap[charsStr] ?= { count:0, lv: [] }
+                lvmap[charsStr].count++
+                lvmap[charsStr].lv.push level
+            for key, value of lvmap
+                continue unless value.count > 1
+                console.log "#{key} : #{JSON.stringify value.lv}"
             wstream.end()
         return
 
@@ -417,7 +425,7 @@ else if cmd is "create_puzzle"
 else if cmd is "info"
     tool.findSameLevel()
     tool.printAllChars()
-
+    
 else
     str = """
     raw_big_word_list.csv -> 大词库
