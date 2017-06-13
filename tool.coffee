@@ -425,29 +425,30 @@ else if cmd is "create_puzzle"
 else if cmd is "info"
     tool.findSameLevel()
     tool.printAllChars()
-    
+
 else
     str = """
     raw_big_word_list.csv -> 大词库
     raw_level_words.csv   -> 小词库
-    level_words.csv       -> 关卡表
-    都是一列的表格
+    以上是一列的表格
+    level_words.csv       -> 按字母数分类过的小词库
+    level_puzzle_out.csv  -> 关卡表
 
 
     coffee tool.coffee -c prepare_word
-        把raw_level_words.csv转化成level_words.csv level_words.csv是分组过的单词表
+        把raw_level_words.csv转化成level_words.csv，level_words.csv是分组过的单词表
 
     coffee tool.coffee -c prepare_level
-        用level_words.csv生成临时文件 每次小词库更新要重新生成(这个操作很慢，耐心等待)
+        用level_words.csv生成临时文件，每次小词库更新要重新生成(这个操作很慢，耐心等待)
 
     coffee tool.coffee -c create_puzzle
         生成关卡
 
     coffee tool.coffee -c prepare_extra
-        用raw_big_word_list.csv生成big_word_list.csv big_word_list.csv是符合字母规定（2-8个字母）的单词
+        用raw_big_word_list.csv生成big_word_list.csv，big_word_list.csv是符合字母规定（2-8个字母）的单词
 
     coffee tool.coffee -c extra
-        用big_word_list.csv给level_words.csv填充额外词
+        用big_word_list.csv给level_puzzle_out.csv填充额外词
 
     coffee tool.coffee -c info
         使用关卡文件level_puzzle_out.csv，检测文件中重复的关卡，输出信息中每行代表同一组重复关卡号，同时输出每关用的字母
