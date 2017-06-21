@@ -123,10 +123,11 @@ tool =
         tool.createPuzzleByTwoYear()
 
     createPuzzleByTwoYear: (table)->
-        years = [2017, 2018, 2019]
+        years = [2017, 2018]
         allPuzzles = []
+        allPuzzles.push []
         for year in years
-            for month in [0..11]
+            for month in [tool.getMonthStartOfYear(year)..11]
                 console.log("month: #{month}")
                 days = tool.getDaysOfMonth(year, month)
                 for day in [1..days]
@@ -137,6 +138,12 @@ tool =
         fs.writeFileSync(CHALLENGE_PUZZLE_CSV, (allPuzzles))
         #fs.writeFileSync(CHALLENGE_LISH_PATH, JSON.stringify(allPuzzles))
         return
+
+    getMonthStartOfYear: (year)->
+        if year is 2017
+            return 3
+        else
+            return 0
 
     getDaysOfMonth: (year, month)->
         switch month
@@ -164,6 +171,8 @@ tool =
         for obj, id in daily_challenge_stage
             onePuzzle = []
             onePuzzle.push tool.getYMDString(date)
+            level = id + 1
+            onePuzzle.push level
             dailyChallengeOnePuzzle = tool.createOnePuzzle(obj, id)
             return dailyChallengeAllPuzzle unless dailyChallengeOnePuzzle?
             dailyChallengeOnePuzzle.map (item)->onePuzzle.push item
