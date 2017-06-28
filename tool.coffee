@@ -338,7 +338,8 @@ tool =
     printAllChars: ->
         parseCsv PUZZLE_FILE_PATH, (table) ->
             data = tool.getPuzzleData(table)
-            wstream = fs.createWriteStream PUZZLE_FILE_PATH + ".info.csv"
+            wstream = fs.createWriteStream PUZZLE_FILE_PATH + ".info.csv", { encoding: 'utf8' }
+            wstream.write '\ufeff'
             lvmap = {}
             for level, puzzle of data
                 chars = tool.allChars(puzzle.ans).sort()
