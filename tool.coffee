@@ -5,6 +5,7 @@ zim     = require './ZimUtils'
 _       = require 'lodash'
 
 cmd     = argv.c
+mode    = argv.m
 
 WORD_FILE_PATH          = "./tables/level_words.csv"
 PUZZLE_FILE_PATH        = "./tables/level_puzzle_out.csv"
@@ -13,12 +14,10 @@ RAW_BIG_WORD_LISH_PATH  = "./tables/raw_big_word_list.csv"
 RAW_WORD_FILE_PATH      = "./tables/raw_level_words.csv"
 
 WORD_DICT_PATH          = "./tables/word_dict.json"
-
-daily_challenge_stage   = require "./tables/0/daily_challenge_stage.json"
-game_config             = require "./tables/0/game_config.json"
-
-CHALLENGE_LISH_PATH     = "./tables/challenge_puzzle.json"
-CHALLENGE_PUZZLE_CSV    = "./tables/challenge_puzzle.csv"
+daily_challenge_stage   = null
+game_config             = null
+mode ?= "word"
+CHALLENGE_LISH_PATH     = "./tables/challenge_puzzle_#{mode}.json"
 
 Dict                    = {}
 BigDict                 = {}
@@ -119,24 +118,23 @@ tool =
         parseCsv(BIG_WORD_LISH_PATH, tool.genWordListBySize)
 
     genChallengePuzzle: ()->
+        daily_challenge_stage   = require "./tables/0/daily_challenge_stage.json"
+        game_config             = require "./tables/0/game_config.json"
         Puzzles = JSON.parse(fs.readFileSync(WORD_DICT_PATH, {encoding: "utf8"}))
         tool.createPuzzleByTwoYear()
 
     createPuzzleByTwoYear: (table)->
         years = [2017, 2018]
-        allPuzzles = []
-        allPuzzles.push []
+        allPuzzles = {}
         for year in years
             for month in [tool.getMonthStartOfYear(year)..11]
-                console.log("month: #{month}")
+                console.log("year: #{year} month: #{month + 1}")
                 days = tool.getDaysOfMonth(year, month)
                 for day in [1..days]
                     date = new Date(year, month, day)
                     puzzles = tool.createPuzzles(date)
-                    puzzles.map (item)->allPuzzles.push item
-                    #allPuzzles.push puzzles
-        fs.writeFileSync(CHALLENGE_PUZZLE_CSV, (allPuzzles))
-        #fs.writeFileSync(CHALLENGE_LISH_PATH, JSON.stringify(allPuzzles))
+                    allPuzzles[tool.getYMDString(date)] = puzzles
+        fs.writeFileSync(CHALLENGE_LISH_PATH, JSON.stringify(allPuzzles))
         return
 
     getMonthStartOfYear: (year)->
@@ -166,18 +164,11 @@ tool =
         retPuzzleList = []
         puzzleNum = 4
         dailyChallengeAllPuzzle = []
-        # dailyChallengeAllPuzzle.push tool.getYMDString(date)
         indexT = 0
         for obj, id in daily_challenge_stage
-            onePuzzle = []
-            onePuzzle.push tool.getYMDString(date)
-            level = id + 1
-            onePuzzle.push level
             dailyChallengeOnePuzzle = tool.createOnePuzzle(obj, id)
             return dailyChallengeAllPuzzle unless dailyChallengeOnePuzzle?
-            dailyChallengeOnePuzzle.map (item)->onePuzzle.push item
-            onePuzzle.push "\n"
-            dailyChallengeAllPuzzle.push onePuzzle
+            dailyChallengeAllPuzzle.push dailyChallengeOnePuzzle
         return dailyChallengeAllPuzzle
 
     random: ->
@@ -223,12 +214,10 @@ tool =
 
         wordArr = tool.removeRepeat(wordArr)
 
-        # challengePuzzle = 
-        #     puzzle: tool.decoratePuzzleArr(wordArr)
-        #     targetScore: targetScore
-        #     rewardCoin: rewardCoin
-        challengePuzzle = [(targetScore), (rewardCoin)]
-        wordArr.map (item)-> challengePuzzle.push(item)
+        challengePuzzle = 
+            puzzle: tool.decoratePuzzleArr(wordArr)
+            targetScore: targetScore
+            rewardCoin: rewardCoin
         return challengePuzzle
 
     removeRepeat: (arr)->
@@ -666,11 +655,12 @@ else
     coffee tool.coffee -c info
         使用关卡文件level_puzzle_out.csv，检测文件中重复的关卡，输出信息中每行代表同一组重复关卡号，同时输出每关用的字母
 
-    coffee tool.coffee -c gen_challenge
-        把big_word_list.csv转化成用于生成每日挑战关卡的表，然后根据此表生成每日挑战关卡表challenge_puzzle.csv
+    coffee tool.coffee -c gen_challenge -m word4
+        把big_word_list.csv转化成用于生成每日挑战关卡的表，然后根据此表生成每日挑战关卡表challenge_puzzle_word4.csv
         运行时间比较长，大约40-50分钟
+        -m参数对应具体的版本, 比如word4
 
-    coffee tool.coffee -c gen_challenge_p
+    coffee tool.coffee -c gen_challenge_p -m word4
         如果已经生成过用于生成每日挑战关卡的表，可以使用gen_challenge_p，运行时间很快
 
     """
