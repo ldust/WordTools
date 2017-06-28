@@ -12,10 +12,24 @@ BIG_WORD_LISH_PATH      = "./tables/big_word_list.csv"
 RAW_BIG_WORD_LISH_PATH  = "./tables/raw_big_word_list.csv"
 RAW_WORD_FILE_PATH      = "./tables/raw_level_words.csv"
 
+WORD_DICT_PATH          = "./tables/word_dict.json"
+
+daily_challenge_stage   = require "./tables/0/daily_challenge_stage.json"
+game_config             = require "./tables/0/game_config.json"
+
+CHALLENGE_LISH_PATH     = "./tables/challenge_puzzle.json"
+CHALLENGE_PUZZLE_CSV    = "./tables/challenge_puzzle.csv"
+
 Dict                    = {}
+BigDict                 = {}
 PATTERN_INDEX           = 3
 ANS_START_INDEX         = 4
 EXTRA_START_INDEX       = 100
+ALL_PATTERN             = "234567"
+AnsDict = {}
+AllMainWord = []
+Puzzles = {}
+Seed = 0
 
 contain = (wordA, wordB)->
     return false if wordA is wordB
@@ -27,6 +41,18 @@ contain = (wordA, wordB)->
         countByC[c] ?= 0
         return false if countByC[c] < 1
         countByC[c] -= 1
+    return true
+
+equalWord = (w1, w2)->
+    arr1 = w1.split("")
+    arr2 = w2.split("")
+    for c in arr1
+        if c in arr2
+            index = arr2.indexOf(c)
+            arr2.splice(index, 1)
+        else
+            return false
+    return false if arr2.length isnt 0
     return true
 
 parseCsv = (path, callback)->
@@ -55,14 +81,185 @@ tool =
             wstream.end()
         return
 
+    genWordListBySize: (table)->
+        for row, rowIndex in table
+            continue if rowIndex is 0
+            for word, index in row
+                continue if word.length is 0 
+                Dict[word.length] ?= []
+                Dict[word.length].push word.toUpperCase()
+        tool.genAnsDict()
+        tool.genChallengePuzzle()
+        return
+
     addWordListContainedByMainWord: (mainWord, max, min)->
         ansList = []
         for wordSize in [min..max]
-            for word in Dict[wordSize]
-                continue if word in ansList
-                if contain(mainWord, word)
-                    ansList.push word
+            if Dict[String(wordSize)]?
+                for word in Dict[String(wordSize)]
+                    continue if word in ansList
+                    if contain(mainWord, word)
+                        ansList.push word
         return ansList
+
+    genAnsDict: ->
+        pattern = ALL_PATTERN
+        patternIntArr = pattern.split("").map((item)-> parseInt(item))
+        for wordSize in patternIntArr by -1
+            console.log "WordSize: #{wordSize}"
+            continue if empty(pattern)
+            for mainWord, indexT in Dict[wordSize]
+                ansList = tool.addWordListContainedByMainWord(mainWord, parseInt(wordSize) or 0, 2)
+                AnsDict[mainWord] = ansList
+            pattern = pattern.slice(0, -1)
+        fs.writeFileSync WORD_DICT_PATH, JSON.stringify(AnsDict, null, 2)
+        return
+
+    genDict: ()->
+        parseCsv(BIG_WORD_LISH_PATH, tool.genWordListBySize)
+
+    genChallengePuzzle: ()->
+        Puzzles = JSON.parse(fs.readFileSync(WORD_DICT_PATH, {encoding: "utf8"}))
+        tool.createPuzzleByTwoYear()
+
+    createPuzzleByTwoYear: (table)->
+        years = [2017, 2018]
+        allPuzzles = []
+        allPuzzles.push []
+        for year in years
+            for month in [tool.getMonthStartOfYear(year)..11]
+                console.log("month: #{month}")
+                days = tool.getDaysOfMonth(year, month)
+                for day in [1..days]
+                    date = new Date(year, month, day)
+                    puzzles = tool.createPuzzles(date)
+                    puzzles.map (item)->allPuzzles.push item
+                    #allPuzzles.push puzzles
+        fs.writeFileSync(CHALLENGE_PUZZLE_CSV, (allPuzzles))
+        #fs.writeFileSync(CHALLENGE_LISH_PATH, JSON.stringify(allPuzzles))
+        return
+
+    getMonthStartOfYear: (year)->
+        if year is 2017
+            return 3
+        else
+            return 0
+
+    getDaysOfMonth: (year, month)->
+        switch month
+            when 0 then return 31
+            when 2 then return 31
+            when 3 then return 30
+            when 4 then return 31
+            when 5 then return 30
+            when 6 then return 31
+            when 7 then return 31
+            when 8 then return 30
+            when 9 then return 31
+            when 10 then return 30
+            when 11 then return 31
+        return 29 if year %% 400 is 0 or (year %% 4 is 0 and year %% 100 isnt 0)
+        28
+
+    createPuzzles: (date)->
+        Seed = tool.createSeed(date)
+        retPuzzleList = []
+        puzzleNum = 4
+        dailyChallengeAllPuzzle = []
+        # dailyChallengeAllPuzzle.push tool.getYMDString(date)
+        indexT = 0
+        for obj, id in daily_challenge_stage
+            onePuzzle = []
+            onePuzzle.push tool.getYMDString(date)
+            level = id + 1
+            onePuzzle.push level
+            dailyChallengeOnePuzzle = tool.createOnePuzzle(obj, id)
+            return dailyChallengeAllPuzzle unless dailyChallengeOnePuzzle?
+            dailyChallengeOnePuzzle.map (item)->onePuzzle.push item
+            onePuzzle.push "\n"
+            dailyChallengeAllPuzzle.push onePuzzle
+        return dailyChallengeAllPuzzle
+
+    random: ->
+        para = Math.sin(Seed) * 10000
+        para = para - Math.floor(para)
+        Seed += 20
+        return para
+
+    createSeed: (date)->
+        month = String(date.getMonth())
+        year = String(date.getYear())
+        day = String(date.getDate())
+        if month.length < 2 then month = "0" + month
+        if day.length < 2 then day = "0" + day
+        seedret = parseInt(year[year.length - 1] + month + day)
+        return seedret
+
+    getYMDString: (date) ->
+        year = String(date.getFullYear())
+        month = String(date.getMonth() + 1)
+        day = String(date.getDate())
+        if month.length < 2 then month = "0#{month}"
+        if day.length < 2 then day = "0#{day}"
+        "#{year}/#{month}/#{day}"
+
+    decoratePuzzleArr: (puzzleArr)->
+        bn: 0
+        ans: puzzleArr
+        add: []
+
+    createOnePuzzle: (dailyChallengeStage, lv)->
+        rewardCoin = dailyChallengeStage.reward_coin_ratio
+        targetScore = dailyChallengeStage.target_points
+        validMainWordList = tool.findAllValidPuzzle(dailyChallengeStage, lv)
+        return if validMainWordList.length is 0
+        index = Math.floor(tool.random() * (validMainWordList.length - 1))
+
+        puzzleWordList = Puzzles[validMainWordList[index]]
+        puzzleWordList.push validMainWordList[index]
+        wordArr = puzzleWordList.map((item)->item.toUpperCase())
+        shortestLen = dailyChallengeStage.clear_short_word_num
+        wordArr = wordArr.filter((item)->item.length >= shortestLen)
+
+        wordArr = tool.removeRepeat(wordArr)
+
+        # challengePuzzle = 
+        #     puzzle: tool.decoratePuzzleArr(wordArr)
+        #     targetScore: targetScore
+        #     rewardCoin: rewardCoin
+        challengePuzzle = [(targetScore), (rewardCoin)]
+        wordArr.map (item)-> challengePuzzle.push(item)
+        return challengePuzzle
+
+    removeRepeat: (arr)->
+        newArr = []
+        for item in arr
+            if item not in newArr
+                newArr.push item
+        return newArr
+
+    calTotalScore: (mainWord, lv)->
+        totalScore = 0
+        for word in Puzzles[mainWord]
+            wordLen = word.length
+            score = game_config[0]["daily_challenge_points_#{wordLen}"]
+            continue if score <= 0
+            shortestLen = daily_challenge_stage[lv].clear_short_word_num
+            continue if wordLen < shortestLen
+            totalScore += score
+        return totalScore
+
+    findAllValidPuzzle: (dailyChallengeStage, lv)->
+        charNum = dailyChallengeStage.base_num
+        targetScore = dailyChallengeStage.target_points
+        difficultyRatio = dailyChallengeStage.difficulty_radio
+        mainWordList = Object.keys(Puzzles).filter((word)->word.length is charNum)
+        validMainWordList = []
+
+        for mainWord in mainWordList
+            continue if tool.calTotalScore(mainWord, lv) < targetScore * difficultyRatio
+            validMainWordList.push mainWord
+        return validMainWordList
 
     addWordListContainedByMainWordAndOtherChar: (mainWord, add, max) ->
         ansList = []
@@ -438,6 +635,10 @@ else if cmd is "info"
     tool.printAllChars()
 else if cmd is "lab"
     tool.lab()
+else if cmd is "gen_challenge"
+    tool.genDict()
+else if cmd is "gen_challenge_p"
+    tool.genChallengePuzzle()
 else
     str = """
     raw_big_word_list.csv -> 大词库
@@ -464,6 +665,13 @@ else
 
     coffee tool.coffee -c info
         使用关卡文件level_puzzle_out.csv，检测文件中重复的关卡，输出信息中每行代表同一组重复关卡号，同时输出每关用的字母
+
+    coffee tool.coffee -c gen_challenge
+        把big_word_list.csv转化成用于生成每日挑战关卡的表，然后根据此表生成每日挑战关卡表challenge_puzzle.csv
+        运行时间比较长，大约40-50分钟
+
+    coffee tool.coffee -c gen_challenge_p
+        如果已经生成过用于生成每日挑战关卡的表，可以使用gen_challenge_p，运行时间很快
 
     """
     console.log str
