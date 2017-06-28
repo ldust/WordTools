@@ -23,40 +23,11 @@ PATTERN_INDEX           = 3
 ANS_START_INDEX         = 4
 EXTRA_START_INDEX       = 100
 
-
-contain = (wordA, wordB)->
-    return false if wordA is wordB
-    countByC = {}
-    for c in wordA
-        countByC[c] ?= 0
-        countByC[c] += 1
-    for c in wordB
-        countByC[c] ?= 0
-        return false if countByC[c] < 1
-        countByC[c] -= 1
-    return true
-
-equalWord = (w1, w2)->
-    arr1 = w1.split("")
-    arr2 = w2.split("")
-    for c in arr1
-        if c in arr2
-            index = arr2.indexOf(c)
-            arr2.splice(index, 1)
-        else
-            return false
-    return false if arr2.length isnt 0
-    return true
-
-zim.empty = (s)-> "\t\r\n ".indexOf(s) isnt -1
-
 parseCsv = (path, callback)->
     data = fs.readFileSync path, {encoding: "utf8"}
     parse data, {delimiter: ','}, (error, table)->
         throw new Error(error) if error?
         callback(table)
-
-
 
 tool = 
     cmp: (a, b) ->
