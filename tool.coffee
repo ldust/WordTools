@@ -374,6 +374,20 @@ tool =
             wordUpperCase += c.toUpperCase() if c isnt "ß"
         return wordUpperCase
 
+    lab: ->
+        chars = "dfnoabrk"
+        parseCsv BIG_WORD_LISH_PATH, (table) ->
+            for row, column in table
+                for item in row
+                    succ = true
+                    for c in item
+                        if not (c in chars)
+                            succ = false
+                            break
+                    if succ
+                        console.log "\"#{item}\","
+            return
+
     handleCsv: (table) ->
         outPut = {}
         for row, column in table
@@ -419,11 +433,11 @@ else if cmd is "prepare_word"
     tool.order()
 else if cmd is "create_puzzle"
     tool.createPuzzle()
-
 else if cmd is "info"
     tool.findSameLevel()
     tool.printAllChars()
-
+else if cmd is "lab"
+    tool.lab()
 else
     str = """
     raw_big_word_list.csv -> 大词库
