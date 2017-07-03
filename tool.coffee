@@ -62,6 +62,16 @@ tool =
         return [] unless good
         return ansList
 
+    addWordListContainedByMainWord: (mainWord, max, min)->
+        ansList = []
+        for wordSize in [min..max]
+            if Dict[String(wordSize)]?
+                for word in Dict[String(wordSize)]
+                    continue if word in ansList
+                    if zim.contain(mainWord, word)
+                        ansList.push word
+        return ansList
+
     createLevel: ->
         parseCsv WORD_FILE_PATH, (table) ->
             for row, index in table
