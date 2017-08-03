@@ -364,6 +364,73 @@ tool =
             wstream.end()
         return
 
+    showRepeat: ->
+        parseCsv PUZZLE_FILE_PATH, (table) ->
+            data = tool.getPuzzleData(table)
+            puzzleCount = Object.keys(data).length
+
+            #example:["UP"] = {[2,9,16], [9,19] }
+            wordGroup = {}
+
+            for level, puzzle of data
+                wordMap = {}
+                for word in puzzle.ans
+                    wordMap[word] = [level]
+
+                for num in [1..14]
+                    nextLevelNum = Number(level) + Number(num)
+                    nextLevel = nextLevelNum.toString()
+                    if nextLevelNum >= puzzleCount
+                        break
+
+                    nextPuzzle = data[nextLevel]
+                    for nextWord in nextPuzzle.ans
+                        if wordMap[nextWord]
+                            wordMap[nextWord].push(nextLevel)
+
+                for word, levels of wordMap
+                    if levels.length < 2
+                        break
+                    if !wordGroup[word]
+                        wordGroup[word] = [ levels]
+                    else
+                        wordGroup[word].push(levels)
+
+            for word, groups of wordGroup
+                str = "#{word}: "
+                for levels in groups
+                    levelStr = ""
+                    for level in levels
+                        levelStr += level + "|"
+                    str += levelStr + ","
+
+                console.log(str)
+
+    showSpecial: ->
+        parseCsv PUZZLE_FILE_PATH, (table) ->
+            data = tool.getPuzzleData(table)
+            for level, puzzle of data
+                sizeMap = {}
+                for word in puzzle.ans
+                    wordSize = word.length
+                    if wordSize < 6
+                        continue
+
+                    if !sizeMap[wordSize]
+                        sizeMap[wordSize] = 1
+                    else
+                        sizeMap[wordSize] = sizeMap[wordSize] + 1
+
+                str = ""
+                for size, count of sizeMap
+                    if count > 1
+                        if str != ""
+                            str += ", "
+                        str += "#{size}-#{count}"
+
+                if str != ""
+                    console.log("#{level}: #{str}")
+
     toUpperCase: (word)->
         wordUpperCase = ""
         for c in word
@@ -437,6 +504,10 @@ else if cmd is "lab"
     tool.lab()
 else if cmd is "gen_challenge"
     tool.genDict()
+else if cmd is "repeat"
+    tool.showRepeat()
+else if cmd is "special"
+    tool.showSpecial()
 else
     str = """
     raw_big_word_list.csv -> 大词库
@@ -468,6 +539,14 @@ else
         把big_word_list.csv转化成用于生成每日挑战关卡的表，然后根据此表生成每日挑战关卡表challenge_puzzle_word4.csv
         运行时间比较长，大约40-50分钟
         -m参数对应具体的版本, 比如word4
+
+    coffee tool.coffee -c repeat
+        显示n关内完全相同的单词
+
+    coffee tool.coffee -c special
+        对符合以下条件的关卡进行标识：
+            —包含字母数≥6的单词
+            —符合条件1的单词数量≥2 
 
     """
     console.log str
