@@ -4,6 +4,7 @@ parse   = require('csv').parse
 parse_sync= require('csv-parse/lib/sync')
 zim     = require './ZimUtils'
 _       = require 'lodash'
+gtrends = require 'google-trends-api'
 
 cmd     = argv.c
 mode    = argv.m
@@ -15,6 +16,7 @@ RAW_BIG_WORD_LISH_PATH  = "./tables/raw_big_word_list.csv"
 RAW_WORD_FILE_PATH      = "./tables/raw_level_words.csv"
 LEVEL_ALPHABAT_PATH     = "./tables/level_alphabet.csv"
 DICTIONARY_PATH         = "./tables/dictionary_ge.csv"
+WORD_LIST_PATH         = "./tables/word_list.csv"
 
 mode ?= "word"
 CHALLENGE_LISH_PATH     = "./tables/challenge_puzzle_#{mode}.json"
@@ -493,6 +495,24 @@ tool =
 
             console.log("#{word}: #{str}")
 
+    getFrequency: (word, oldFreq)->
+        now = Date.now()
+        timespan = 30 * 24 * 3600
+        gtrends.interestOverTime {keyword:word, startTime:new Date(now - timespan), endTime:new Date(now)}, (err, result)->
+            if !err
+                obj = JSON.parse(result)
+                data = obj['default']['timelineData']
+                if data.length > 0
+                    freq = data[data.length - 1]['value'][0]
+                    console.log("#{word}: #{oldFreq},#{freq}")
+
+    showFrequency: ->
+        wordsTab = getTable(WORD_LIST_PATH)
+
+        for row, col in wordsTab
+            @getFrequency(row[0], row[1])
+
+
     toUpperCase: (word)->
         wordUpperCase = ""
         for c in word
@@ -572,6 +592,8 @@ else if cmd is "special"
     tool.showSpecial()
 else if cmd is "permutate"
     tool.showPermutate()
+else if cmd is "frequency"
+    tool.showFrequency()
 else
     str = """
     raw_big_word_list.csv -> 大词库
@@ -614,6 +636,9 @@ else
 
     coffee tool.coffee -c permutate
         输出词库所有排列组合中在关卡中出现的词
+
+    coffee tool.coffee -c frequency
+        输出词频
 
     """
     console.log str
