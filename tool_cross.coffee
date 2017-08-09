@@ -216,10 +216,10 @@ tool =
             console.log "[Createing Level]"
             for id, cfg of config
                 process.stdout.write("=====> create level #{id}\n");
-                if cfg.letter_max > cfg.word_length_max + 1 or cfg.letter_max < cfg.word_length_max
-                    console.log "[Error]: #{id}: cfg.letter_max error"
-                else if cfg.letter_min > cfg.word_length_max + 1 or cfg.letter_max < cfg.word_length_max
-                    console.log "[Error]: #{id}: cfg.letter_min error"
+                if cfg.letter_max > cfg.word_length_max + 1
+                    console.log "[Error]: #{id}: letter_max(#{cfg.letter_max}) can't bigger than cfg.word_length_max(#{cfg.word_length_max}) + 1"
+                else if cfg.letter_max < cfg.word_length_max
+                    console.log "[Error]: #{id}: letter_max(#{cfg.letter_max}) can't smaller than cfg.word_length_max(#{cfg.word_length_max})"
                 else
                     cache = cabdidateCache["#{cfg.word_length_max}-0"]
                     match = tool._getMatchFromCache(cache, cfg)
@@ -239,6 +239,7 @@ tool =
                             else
                                 console.log "[WARNING]: #{id} use match from 'more table' and need difficulty:#{cfg.difficulty_max} but use #{matchMore.difficulty}"
                         else
+                            levels.push null
                             console.log "[Error]: #{id} no match puzzle"
             tool._saveLevels(levels)
             callback?()
