@@ -1,6 +1,7 @@
 argv    = require('yargs').argv
 fs      = require 'fs'
 parse   = require('csv').parse
+parse_sync= require('csv-parse/lib/sync')
 zim     = require './ZimUtils'
 _       = require 'lodash'
 
@@ -12,6 +13,8 @@ PUZZLE_FILE_PATH        = "./tables/level_puzzle_out.csv"
 BIG_WORD_LISH_PATH      = "./tables/big_word_list.csv"
 RAW_BIG_WORD_LISH_PATH  = "./tables/raw_big_word_list.csv"
 RAW_WORD_FILE_PATH      = "./tables/raw_level_words.csv"
+LEVEL_ALPHABAT_PATH     = "./tables/level_alphabet.csv"
+DICTIONARY_PATH         = "./tables/dictionary_ge.csv"
 
 mode ?= "word"
 CHALLENGE_LISH_PATH     = "./tables/challenge_puzzle_#{mode}.json"
@@ -28,6 +31,10 @@ parseCsv = (path, callback)->
     parse data, {delimiter: ','}, (error, table)->
         throw new Error(error) if error?
         callback(table)
+
+getTable = (path)->
+    data = fs.readFileSync path, {encoding: "utf8"}
+    return parse_sync(data, {delimiter: ','})
 
 tool = 
     cmp: (a, b) ->
@@ -431,6 +438,61 @@ tool =
                 if str != ""
                     console.log("#{level}: #{str}")
 
+    heapPermutation: (results, word, size, n)->
+        if size == 1
+            result_word = word.join('')
+            results[result_word] = 1
+            #results.push(word.join(''))
+            #console.log(word.join(''))
+            return
+
+        for i in [0 .. size - 1]
+            tool.heapPermutation(results, word, size - 1, n)
+            # swap
+            index1 = if size % 2 then 0 else i
+            index2 = size - 1
+            temp = word[index1]
+            word[index1] = word[index2]
+            word[index2] = temp
+
+
+    #依次删除每一个字符
+    allHeapPermutation: (results, word)->
+        #console.log(word)
+        arr = word.split('')
+        tool.heapPermutation(results, arr, arr.length, arr.length)
+        if word.length <= 2
+            return
+
+        #删除一个元素后继续
+        for i in [0 .. word.length - 1]
+            subword = word.slice(0, i) + word.slice(i + 1, word.length)
+            tool.allHeapPermutation(results, subword)
+
+    #输出不重复的全排列
+    showPermutate: ->
+        wordsMap = {}
+        wordsTab = getTable(DICTIONARY_PATH)
+        for row, column in wordsTab
+            wordsMap[row[0]] = 1
+
+
+        levelMap = {}
+        levelTab = getTable(LEVEL_ALPHABAT_PATH)
+        for row, column in levelTab
+            levelMap[row[1]] = 1
+
+        for word, _ of wordsMap
+#            console.log(word)
+            results = {}
+            tool.allHeapPermutation(results, word)
+            str = ""
+            for w1, _ of results
+                if levelMap[w1]
+                    str += w1 + ","
+
+            console.log("#{word}: #{str}")
+
     toUpperCase: (word)->
         wordUpperCase = ""
         for c in word
@@ -508,6 +570,8 @@ else if cmd is "repeat"
     tool.showRepeat()
 else if cmd is "special"
     tool.showSpecial()
+else if cmd is "permutate"
+    tool.showPermutate()
 else
     str = """
     raw_big_word_list.csv -> 大词库
@@ -546,7 +610,10 @@ else
     coffee tool.coffee -c special
         对符合以下条件的关卡进行标识：
             —包含字母数≥6的单词
-            —符合条件1的单词数量≥2 
+            —符合条件1的单词数量≥2
+
+    coffee tool.coffee -c permutate
+        输出词库所有排列组合中在关卡中出现的词
 
     """
     console.log str
