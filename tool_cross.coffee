@@ -224,7 +224,7 @@ tool =
                     cache = cabdidateCache["#{cfg.word_length_max}-0"]
                     match = tool._getMatchFromCache(cache, cfg)
                     if match
-                        levels.push match
+                        levels.push match.ret
                         cache.splice match.index, 1
                         unless match.success
                             console.log "[WARNING]: #{id} need difficulty:#{cfg.difficulty_max} but use #{match.difficulty}"
@@ -232,7 +232,7 @@ tool =
                         cacheMore = cabdidateCache["#{cfg.word_length_max}-1"]
                         matchMore = tool._getMatchFromCache(cacheMore, cfg)
                         if matchMore
-                            levels.push matchMore
+                            levels.push matchMore.ret
                             cacheMore.splice matchMore.index, 1
                             if matchMore.success
                                 console.log "[WARNING]: #{id} use match from 'more table'"
@@ -281,7 +281,7 @@ tool =
         outputPath = "./output"
         unless fs.existsSync(outputPath)
             fs.mkdirSync(outputPath)
-            
+
         #====
         fs.writeFileSync "./output/level.json", JSON.stringify levels
         #====
@@ -313,10 +313,10 @@ tool =
                 row[CONFIGS.success] = if level.success then 1 else 0
                 row[CONFIGS.extCount] = level.add
                 row[CONFIGS.size] = level.size
-                row[CONFIGS.type] = (level.ret.puzzle.map (word)-> word.length + '').join('')
-                for ans, ansI in level.ret.puzzle
+                row[CONFIGS.type] = (level.puzzle.map (word)-> word.length + '').join('')
+                for ans, ansI in level.puzzle
                     row[CONFIGS.ans + ansI] = ans
-                for ext, extI in level.ret.ext
+                for ext, extI in level.ext
                     row[CONFIGS.ext + extI] = ext
             wstream.write row.join(",") + "\n"
         wstream.end()
