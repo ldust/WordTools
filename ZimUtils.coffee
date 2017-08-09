@@ -474,6 +474,19 @@ zim.equalWord = (w1, w2)->
     return false if arr2.length isnt 0
     return true
 
+zim.diffWordLetter = (wordA, wordB)->
+    return [] if wordA is wordB
+    count = {}
+    ret = []
+    for c in wordA
+        count[c] ?= 0
+        count[c] += 1
+    for c in wordB
+        if count[c] > 0
+            count[c]--
+        else ret.push c
+    ret
+
 zim.empty = (s)-> "\t\r\n ".indexOf(s) isnt -1
 
 module.exports = zim
