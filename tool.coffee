@@ -508,10 +508,10 @@ tool =
 
     showFrequency: ->
         wordsTab = getTable(WORD_LIST_PATH)
+        maxFreq = wordsTab[0][1]
 
         for row, col in wordsTab
-            @getFrequency(row[0], row[1])
-
+            @getFrequency(row[0], row[1]/maxFreq * 100)
 
     toUpperCase: (word)->
         wordUpperCase = ""
