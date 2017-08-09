@@ -42,6 +42,13 @@ tool =
         return 1 if a > b
         return 0
 
+    cmpup: (a, b) ->
+        sub = a.length - b.length
+        return sub unless sub is 0
+        return -1 if a < b
+        return 1 if a > b
+        return 0
+
     prepareLevel: (callback)->
         console.log "[Prepare Level]"
         parseCsv RAW_WORD_FILE_PATH, (table) ->
@@ -264,12 +271,13 @@ tool =
             id      : 0
             difficulty : 1
             success : 2
-            size    : 3
-            type    : 4
-            ans     : 5
-            ext     : 14
+            extCount: 3
+            size    : 4
+            type    : 5
+            ans     : 6
+            ext     : 15
 
-        COLUMES     = 27
+        COLUMES     = 28
 
         titles = []
         titles.length = COLUMES
@@ -284,6 +292,7 @@ tool =
             row[CONFIGS.id] = index + 1
             row[CONFIGS.difficulty] = level.difficulty
             row[CONFIGS.success] = if level.success then 1 else 0
+            row[CONFIGS.extCount] = level.add
             row[CONFIGS.size] = level.size
             row[CONFIGS.type] = (level.puzzle.map (word)-> word.length + '').join('')
             for ans, ansI in level.puzzle
@@ -326,9 +335,10 @@ tool =
             size = cfg.word_length_max + 2
             cross = genCross(puzzle, ext, size, size)
             if cross
-                puzzle.sort tool.cmp
-                ext.sort tool.cmp
-                return {chars, puzzle, ext}
+                puzzle.sort tool.cmpup
+                add = cross.add.length
+                ext = cross.add.concat(cross.ext)
+                return {chars, puzzle, ext, size, add}
             else 
                 null
         else
