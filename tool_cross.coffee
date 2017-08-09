@@ -278,6 +278,10 @@ tool =
             null
 
     _saveLevels: (levels)->
+        outputPath = "./output"
+        unless fs.existsSync(outputPath)
+            fs.mkdirSync(outputPath)
+            
         #====
         fs.writeFileSync "./output/level.json", JSON.stringify levels
         #====
