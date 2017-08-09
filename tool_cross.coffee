@@ -305,8 +305,13 @@ tool =
 
     _createLevelByCfg: (level, cfg)->
         puzzleOrigin = level.puzzle.concat()
+        ## rm word length not match
+        puzzleFrequencyUp = []
         for w, i in puzzleOrigin by -1
             if w.length < cfg.word_length_min
+                puzzleOrigin.splice(i, 1)
+            else if Hz[w] > cfg.word_frequency
+                puzzleFrequencyUp.push w
                 puzzleOrigin.splice(i, 1)
 
         if puzzleOrigin.length < cfg.word_num
@@ -330,7 +335,7 @@ tool =
             puzzle.push puzzleOrigin[index]
             puzzleOrigin.splice(index, 1)
 
-        ext = level.extra.concat(puzzleOrigin)
+        ext = level.extra.concat(puzzleOrigin, puzzleFrequencyUp)
         chars = tool.allChars(puzzle)
         if chars.length is cfg.word_length_max or chars.length is cfg.word_length_max + 1
             size = cfg.word_length_max + 2
