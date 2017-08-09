@@ -222,44 +222,64 @@ tool =
                     console.log "[Error]: #{id}: cfg.letter_min error"
                 else
                     cache = cabdidateCache["#{cfg.word_length_max}-0"]
-                    randFun = random(100).random
-                    match = null
-                    indexTryed = []
-                    for i in [0 ... 500]
-                        index = Math.floor(randFun() * cache.length)
-                        tryCount = 0
-                        while index in indexTryed and tryCount < 100
-                            index = Math.floor(randFun() * cache.length)
-                            tryCount++
-                        indexTryed.push index
-                        puzzle = cache[index]
-                        ret = tool._createLevelByCfg(puzzle, cfg)
-                        if ret
-                            difficulty = Math.floor(tool._calcDifficulty(ret.puzzle))
-                            ret.difficulty = difficulty
-                            if cfg.difficulty_min <= difficulty <= cfg.difficulty_max
-                                match = {ret, index, difficulty, success: true}
-                                break
-                            else
-                                if match
-                                    if Math.abs(match.difficulty - cfg.difficulty_max) > Math.abs(difficulty - cfg.difficulty_max)
-                                        match = {ret, index, difficulty, success: false}
-                                else
-                                    match = {ret, index, difficulty, success: false}
-
-                    if match
-                        match.ret.success = match.success
-                        match.ret.id = id
-                        levels.push match.ret
+                    match = tool._getMatchFromCache(cache, cfg)
+                    if match.success
+                        levels.push match
                         cache.splice match.index, 1
-                        unless match.success
-                            console.log "[WARNING] level:#{id} need difficulty:#{cfg.difficulty_max} but use #{match.difficulty}"
                     else
-                        console.log "[ERROR] level:#{id} no match level"
+                        cacheMore = cabdidateCache["#{cfg.word_length_max}-1"]
+                        matchMore = tool._getMatchFromCache(cacheMore, cfg)
+                        if matchMore.success
+                            levels.push matchMore
+                            cacheMore.splice matchMore.index, 1
+                            console.log "[WARNING]: #{id} use match <more table>"
+                        else if match
+                            levels.push match
+                            cache.splice match.index, 1
+                            console.log "[WARNING]: #{id} need difficulty:#{cfg.difficulty_max} but use #{matchMore.difficulty}"
+                        else if matchMore
+                            levels.push matchMore
+                            cacheMore.splice matchMore.index, 1
+                            console.log "[WARNING]: #{id} use <more table> and need difficulty:#{cfg.difficulty_max} but use #{matchMore.difficulty}"
+                        else
+                            console.log "[Error]: #{id} no match puzzle"
 
             tool._saveLevels(levels)
             callback?()
             return
+
+    _getMatchFromCache: (cache, cfg)->
+        randFun = random(100).random
+        match = null
+        indexTryed = []
+        for i in [0 ... 500]
+            index = Math.floor(randFun() * cache.length)
+            tryCount = 0
+            while index in indexTryed and tryCount < 100
+                index = Math.floor(randFun() * cache.length)
+                tryCount++
+            indexTryed.push index
+            puzzle = cache[index]
+            ret = tool._createLevelByCfg(puzzle, cfg)
+            if ret
+                difficulty = Math.floor(tool._calcDifficulty(ret.puzzle))
+                ret.difficulty = difficulty
+                if cfg.difficulty_min <= difficulty <= cfg.difficulty_max
+                    match = {ret, index, difficulty, success: true}
+                    break
+                else
+                    if match
+                        if Math.abs(match.difficulty - cfg.difficulty_max) > Math.abs(difficulty - cfg.difficulty_max)
+                            match = {ret, index, difficulty, success: false}
+                    else
+                        match = {ret, index, difficulty, success: false}
+
+        if match
+            match.ret.success = match.success
+            match.ret.id = cfg.id
+            return match
+        else
+            null
 
     _saveLevels: (levels)->
         #====
@@ -287,16 +307,17 @@ tool =
         for level, index in levels
             row = []
             row.length = COLUMES
-            row[CONFIGS.id] = index + 1
-            row[CONFIGS.difficulty] = level.difficulty
-            row[CONFIGS.success] = if level.success then 1 else 0
-            row[CONFIGS.extCount] = level.add
-            row[CONFIGS.size] = level.size
-            row[CONFIGS.type] = (level.puzzle.map (word)-> word.length + '').join('')
-            for ans, ansI in level.puzzle
-                row[CONFIGS.ans + ansI] = ans
-            for ext, extI in level.ext
-                row[CONFIGS.ext + extI] = ext
+            if level
+                row[CONFIGS.id] = index + 1
+                row[CONFIGS.difficulty] = level.difficulty
+                row[CONFIGS.success] = if level.success then 1 else 0
+                row[CONFIGS.extCount] = level.add
+                row[CONFIGS.size] = level.size
+                row[CONFIGS.type] = (level.ret.puzzle.map (word)-> word.length + '').join('')
+                for ans, ansI in level.ret.puzzle
+                    row[CONFIGS.ans + ansI] = ans
+                for ext, extI in level.ret.ext
+                    row[CONFIGS.ext + extI] = ext
             wstream.write row.join(",") + "\n"
         wstream.end()
 
@@ -312,6 +333,8 @@ tool =
                 puzzleOrigin.splice(i, 1)
 
         if puzzleOrigin.length < cfg.word_num
+            # if cfg.id is 10
+            #     console.log "11111 #{puzzleOrigin.length} #{cfg.word_num}"
             return
 
         puzzle = []
