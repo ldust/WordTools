@@ -223,27 +223,23 @@ tool =
                 else
                     cache = cabdidateCache["#{cfg.word_length_max}-0"]
                     match = tool._getMatchFromCache(cache, cfg)
-                    if match.success
+                    if match
                         levels.push match
                         cache.splice match.index, 1
+                        unless match.success
+                            console.log "[WARNING]: #{id} need difficulty:#{cfg.difficulty_max} but use #{match.difficulty}"
                     else
                         cacheMore = cabdidateCache["#{cfg.word_length_max}-1"]
                         matchMore = tool._getMatchFromCache(cacheMore, cfg)
-                        if matchMore.success
+                        if matchMore
                             levels.push matchMore
                             cacheMore.splice matchMore.index, 1
-                            console.log "[WARNING]: #{id} use match <more table>"
-                        else if match
-                            levels.push match
-                            cache.splice match.index, 1
-                            console.log "[WARNING]: #{id} need difficulty:#{cfg.difficulty_max} but use #{matchMore.difficulty}"
-                        else if matchMore
-                            levels.push matchMore
-                            cacheMore.splice matchMore.index, 1
-                            console.log "[WARNING]: #{id} use <more table> and need difficulty:#{cfg.difficulty_max} but use #{matchMore.difficulty}"
+                            if matchMore.success
+                                console.log "[WARNING]: #{id} use match from 'more table'"
+                            else
+                                console.log "[WARNING]: #{id} use match from 'more table' and need difficulty:#{cfg.difficulty_max} but use #{matchMore.difficulty}"
                         else
                             console.log "[Error]: #{id} no match puzzle"
-
             tool._saveLevels(levels)
             callback?()
             return
