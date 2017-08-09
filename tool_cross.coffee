@@ -5,17 +5,14 @@ parse   = require('csv').parse
 zim     = require './ZimUtils'
 _       = require 'lodash'
 genCross = require './gen_cross'
-random          = require './ZimConsistentRandom'
+random  = require './ZimConsistentRandom'
 
 cmd     = argv.c
 mode    = argv.m
 
 LEVEL_RULES_PATH        = "./tables/output_rules.csv"
-WORD_FILE_PATH          = "./tables/level_words.csv"
-PUZZLE_FILE_PATH        = "./tables/level_puzzle_out.csv"
-BIG_WORD_LISH_PATH      = "./tables/big_word_list.csv"
-RAW_BIG_WORD_LISH_PATH  = "./tables/raw_big_word_list.csv"
-RAW_WORD_FILE_PATH      = "./tables/raw_level_words.csv"
+RAW_BIG_WORD_LISH_PATH  = "./tables/big.csv"
+RAW_WORD_FILE_PATH      = "./tables/words.csv"
 
 mode ?= "word"
 CHALLENGE_LISH_PATH     = "./tables/challenge_puzzle_#{mode}.json"
@@ -199,7 +196,7 @@ tool =
         return
 
     mapWordHZ: (callback)->
-        parseCsv "./tables/hz.csv", (table) ->
+        parseCsv "./config/hz.csv", (table) ->
             for row, index in table
                 Hz[row[0]] = index
             tool.hz = JSON.parse fs.readFileSync "./config/hz.json", {encoding: "utf8"}
