@@ -252,6 +252,7 @@ tool =
 
                     if match
                         match.ret.success = match.success
+                        match.ret.id = id
                         levels.push match.ret
                         cache.splice match.index, 1
                         unless match.success
@@ -345,11 +346,11 @@ tool =
             null
 
     _getHzRatio: (word)->
-        hz = Hz[word] or 1
+        hz = Hz[word] or 0
         for item in tool.hz
-            if hz < item[0]
+            if hz <= item[0]
                 return item[1]
-        return 1.9
+        return item[1]
 
     _calcDifficulty: (words)->
         score = 0
