@@ -359,9 +359,9 @@ tool =
         chars = tool.allChars(puzzle)
         if chars.length is cfg.word_length_max or chars.length is cfg.word_length_max + 1
             size = cfg.word_length_max + 2
+            puzzle.sort tool.cmpup
             cross = genCross(puzzle, ext, size, size)
             if cross
-                puzzle.sort tool.cmpup
                 add = cross.add.length
                 ext = cross.add.concat(cross.ext)
                 return {chars, puzzle, ext, size, add}
