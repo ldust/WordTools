@@ -478,12 +478,17 @@ tool =
         for row, column in wordsTab
             wordsMap[row[0]] = 1
 
-
+        count = 0
         levelMap = {}
         levelTab = getTable(LEVEL_ALPHABAT_PATH)
         for row, column in levelTab
-            levelMap[row[1]] = 1
+            if levelMap[row[1]]
+                count++
+            else
+                levelMap[row[1]] = 1
 
+
+#        console.log("level size", count, Object.keys(levelMap).length)
         for word, _ of levelMap
 #            console.log(word)
             results = {}
@@ -493,7 +498,7 @@ tool =
                 if wordsMap[w1]
                     str += w1 + ","
 
-            console.log("#{word}:#{str}")
+            console.log("#{word}:\t#{str}")
 
     getFrequency: (results, word, oldFreq, index)->
         now = Date.now()
