@@ -495,7 +495,7 @@ tool =
 
             console.log("#{word}: #{str}")
 
-    getFrequency: (word, oldFreq)->
+    getFrequency: (results, word, oldFreq, index)->
         now = Date.now()
         timespan = 30 * 24 * 3600
         gtrends.interestOverTime {keyword:word, startTime:new Date(now - timespan), endTime:new Date(now)}, (err, result)->
@@ -504,14 +504,24 @@ tool =
                 data = obj['default']['timelineData']
                 if data.length > 0
                     freq = data[data.length - 1]['value'][0]
-                    console.log("#{word}: #{oldFreq},#{freq}")
+                    results.push({'word':word, 'freq':freq, 'oldFreq':oldFreq, 'index':index} )
+                    #console.log("#{word}: #{oldFreq},#{freq}")
 
     showFrequency: ->
         wordsTab = getTable(WORD_LIST_PATH)
         maxFreq = wordsTab[0][1]
 
+        results = []
         for row, col in wordsTab
-            @getFrequency(row[0], row[1]/maxFreq * 100)
+            @getFrequency(results, row[0], row[1]/maxFreq * 100, col)
+
+        process.on 'exit', (code)->
+            results.sort (r1, r2)->
+                r1.freq < r2.freq
+            console.log("word:\tfreq\toldFreq\tindex\toldIndex")
+            for item, index in results
+                console.log("#{item.word}: \t#{item.freq}\t#{item.oldFreq}\t#{index}\t#{item.index}")
+            #console.log("exit", code)
 
     toUpperCase: (word)->
         wordUpperCase = ""
