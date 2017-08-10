@@ -484,16 +484,16 @@ tool =
         for row, column in levelTab
             levelMap[row[1]] = 1
 
-        for word, _ of wordsMap
+        for word, _ of levelMap
 #            console.log(word)
             results = {}
             tool.allHeapPermutation(results, word)
             str = ""
             for w1, _ of results
-                if levelMap[w1]
+                if wordsMap[w1]
                     str += w1 + ","
 
-            console.log("#{word}: #{str}")
+            console.log("#{word}:#{str}")
 
     getFrequency: (results, word, oldFreq, index)->
         now = Date.now()
