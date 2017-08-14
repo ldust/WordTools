@@ -588,6 +588,48 @@ tool =
             wstream.end()
         return
 
+    showRepeat: ->
+        parseCsv PUZZLE_FILE_PATH, (table) ->
+            data = tool._getPuzzleData(table)
+            puzzleCount = Object.keys(data).length
+
+            #example:["UP"] = {[2,9,16], [9,19] }
+            wordGroup = {}
+
+            for level, puzzle of data
+                wordMap = {}
+                for word in puzzle.ans
+                    wordMap[word] = [level]
+
+                for num in [1..14]
+                    nextLevelNum = Number(level) + Number(num)
+                    nextLevel = nextLevelNum.toString()
+                    if nextLevelNum >= puzzleCount
+                        break
+
+                    nextPuzzle = data[nextLevel]
+                    for nextWord in nextPuzzle.ans
+                        if wordMap[nextWord]
+                            wordMap[nextWord].push(nextLevel)
+
+                for word, levels of wordMap
+                    if levels.length < 2
+                        break
+                    if !wordGroup[word]
+                        wordGroup[word] = [ levels]
+                    else
+                        wordGroup[word].push(levels)
+
+            for word, groups of wordGroup
+                str = "#{word}: "
+                for levels in groups
+                    levelStr = ""
+                    for level in levels
+                        levelStr += level + "|"
+                    str += levelStr + ","
+
+                console.log(str)
+
 if cmd is "run"
     async.series [ 
         tool.prepareLevel, 
@@ -614,6 +656,8 @@ else if cmd is "level"
 else if cmd is "info"
     tool.findSameLevel()
     tool.printAllChars()
+else if cmd is "repeat"
+    tool.showRepeat()
 else
     str = """
     ======= tables
