@@ -198,7 +198,8 @@ tool =
     mapWordHZ: (callback)->
         parseCsv "./config/hz.csv", (table) ->
             for row, index in table
-                Hz[row[0]] = index
+                lowerWord = row[0].toLowerCase()
+                Hz[lowerWord] = index
             tool.hz = JSON.parse fs.readFileSync "./config/hz.json", {encoding: "utf8"}
             tool.len = JSON.parse fs.readFileSync "./config/len.json", {encoding: "utf8"}
             callback?()
@@ -239,13 +240,31 @@ tool =
                             else
                                 console.log "[WARNING]: #{id} use match from 'more table' and need difficulty:#{cfg.difficulty_max} but use #{matchMore.difficulty}"
                         else
-                            levels.push null
-                            console.log "[Error]: #{id} no match puzzle"
+                            console.log "[WARNING]: #{id} use non continuous func"
+                            cache = cabdidateCache["#{cfg.word_length_max}-0"]
+                            match = tool._getMatchFromCache(cache, cfg, true)
+                            if match
+                                levels.push match.ret
+                                cache.splice match.index, 1
+                                unless match.success
+                                    console.log "[WARNING]: #{id} need difficulty:#{cfg.difficulty_max} but use #{match.difficulty}"
+                            else
+                                cacheMore = cabdidateCache["#{cfg.word_length_max}-1"]
+                                matchMore = tool._getMatchFromCache(cacheMore, cfg, true)
+                                if matchMore
+                                    levels.push matchMore.ret
+                                    cacheMore.splice matchMore.index, 1
+                                    if matchMore.success
+                                        console.log "[WARNING]: #{id} use match from 'more table'"
+                                    else
+                                        console.log "[WARNING]: #{id} use match from 'more table' and need difficulty:#{cfg.difficulty_max} but use #{matchMore.difficulty}"
+                                else
+                                    console.log "[error]: #{id} has no match"
             tool._saveLevels(levels)
             callback?()
             return
 
-    _getMatchFromCache: (cache, cfg)->
+    _getMatchFromCache: (cache, cfg, useNonCon)->
         randFun = random(100).random
         match = null
         indexTryed = []
@@ -257,7 +276,7 @@ tool =
                 tryCount++
             indexTryed.push index
             puzzle = cache[index]
-            ret = tool._createLevelByCfg(puzzle, cfg)
+            ret = tool._createLevelByCfg(puzzle, cfg, useNonCon)
             if ret
                 difficulty = Math.floor(tool._calcDifficulty(ret.puzzle))
                 ret.difficulty = difficulty
@@ -270,7 +289,6 @@ tool =
                             match = {ret, index, difficulty, success: false}
                     else
                         match = {ret, index, difficulty, success: false}
-
         if match
             match.ret.success = match.success
             match.ret.id = cfg.id
@@ -322,7 +340,7 @@ tool =
             wstream.write row.join(",") + "\n"
         wstream.end()
 
-    _createLevelByCfg: (level, cfg)->
+    _createLevelByCfg: (level, cfg, useNonCon)->
         puzzleOrigin = level.puzzle.concat()
         ## rm word length not match
         puzzleFrequencyUp = []
@@ -337,7 +355,6 @@ tool =
             # if cfg.id is 10
             #     console.log "11111 #{puzzleOrigin.length} #{cfg.word_num}"
             return
-
         puzzle = []
         for n in [cfg.word_length_min .. cfg.word_length_max]
             found = false
@@ -348,7 +365,26 @@ tool =
                     found = true
                     break
             unless found
-                return
+                if useNonCon
+                    return if n is cfg.word_length_max
+                    return if n is cfg.word_length_min
+                    targetN = n - 1
+                    reFound = false
+                    while targetN >= cfg.word_length_min
+                        for w1, i1 in puzzleOrigin by -1
+                            if w1.length is targetN
+                                puzzle.push w1
+                                puzzleOrigin.splice(i1, 1)
+                                reFound = true
+                                break
+                        if reFound
+                            break
+                        else
+                            targetN--
+                    unless reFound
+                        return
+                else
+                    return
 
         randFun = random(1000).random
         while puzzle.length < cfg.word_num and puzzleOrigin.length > 0
@@ -434,7 +470,7 @@ if cmd is "run"
         tool.prepareLevel, 
         tool.moreLevel, 
         tool.removeRepeat,
-        tool.removeNonContinuous,
+        #tool.removeNonContinuous,
         tool.fillExtra,
         tool.mapWordHZ,
         tool.createLevels
@@ -444,7 +480,7 @@ else if cmd is "prepare"
         tool.prepareLevel, 
         tool.moreLevel, 
         tool.removeRepeat,
-        tool.removeNonContinuous,
+        #tool.removeNonContinuous,
         tool.fillExtra
     ], (error, result)->
 else if cmd is "level"
