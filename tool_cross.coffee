@@ -248,14 +248,14 @@ tool =
                             else
                                 console.log "[WARNING]: #{id} use match from 'more table' and need difficulty:#{cfg.difficulty_max} but use #{matchMore.difficulty}"
                         else
-                            console.log "[WARNING]: #{id} use non continuous func"
+                            console.log "[WARNING]: #{id}  use non continuous func"
                             cache = cabdidateCache["#{cfg.word_length_max}-0"]
                             match = tool._getMatchFromCache(cache, cfg, true)
                             if match
                                 levels.push match.ret
                                 cache.splice match.index, 1
                                 unless match.success
-                                    console.log "[WARNING]: #{id} need difficulty:#{cfg.difficulty_max} but use #{match.difficulty}"
+                                    console.log "[WARNING]: #{id} use non continuous need difficulty:#{cfg.difficulty_max} but use #{match.difficulty}"
                             else
                                 cacheMore = cabdidateCache["#{cfg.word_length_max}-1"]
                                 matchMore = tool._getMatchFromCache(cacheMore, cfg, true)
@@ -263,9 +263,9 @@ tool =
                                     levels.push matchMore.ret
                                     cacheMore.splice matchMore.index, 1
                                     if matchMore.success
-                                        console.log "[WARNING]: #{id} use match from 'more table'"
+                                        console.log "[WARNING]: #{id} use non continuous match from 'more table'"
                                     else
-                                        console.log "[WARNING]: #{id} use match from 'more table' and need difficulty:#{cfg.difficulty_max} but use #{matchMore.difficulty}"
+                                        console.log "[WARNING]: #{id} use non continuous match from 'more table' and need difficulty:#{cfg.difficulty_max} but use #{matchMore.difficulty}"
                                 else
                                     console.log "[error]: #{id} has no match"
             tool._saveLevels(levels)
