@@ -13,7 +13,7 @@ mode    = argv.m
 LEVEL_RULES_PATH        = "./tables/output_rules.csv"
 RAW_BIG_WORD_LISH_PATH  = "./tables/big.csv"
 RAW_WORD_FILE_PATH      = "./tables/words.csv"
-PUZZLE_FILE_PATH        = "./tables/level_puzzle_out_v14.csv"
+PUZZLE_FILE_PATH        = "./output/level.csv"
 
 mode ?= "word"
 CHALLENGE_LISH_PATH     = "./tables/challenge_puzzle_#{mode}.json"
@@ -491,9 +491,10 @@ tool =
         for row, column in table
             id = row[0]
             continue if id[0] is "#"
+            continue if column is 0
             newRow = {}
             outPut[id] = newRow
-            pattern = row[4]
+            pattern = row[5]
             bonus = 0
             newRow.bn = parseInt(bonus) or 0
             newRow.tp = pattern
@@ -504,9 +505,9 @@ tool =
                 item = item.trim()
                 if item.match(/\s/img)?
                     throw new Error("Word Contain SpaceChar Error In Row #{column}")
-                if 0 <= index - 5 < pattern.length
+                if 0 <= index - 6 < pattern.length
                     newRow.ans.push @_toUpperCase(item)
-                else if index - 5 >= pattern.length
+                else if index - 6 >= pattern.length
                     newRow.add.push @_toUpperCase(item)
             newRow.ans.sort(@cmpRepeat)
             for item, index in newRow.ans
