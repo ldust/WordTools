@@ -568,6 +568,24 @@ tool =
     findSameLevel: ->
         parseCsv(PUZZLE_FILE_PATH, @getAllSameLevel.bind(@))
 
+    printAllChars: ->
+        parseCsv PUZZLE_FILE_PATH, (table) ->
+            data = tool._getPuzzleData(table)
+            wstream = fs.createWriteStream PUZZLE_FILE_PATH + ".info.csv", { encoding: 'utf8' }
+            wstream.write '\ufeff'
+            lvmap = {}
+            for level, puzzle of data
+                chars = tool.allChars(puzzle.ans).sort()
+                charsStr = chars.join("")
+                wstream.write level + "," + charsStr + "\n"
+                lvmap[charsStr] ?= { count:0, lv: [] }
+                lvmap[charsStr].count++
+                lvmap[charsStr].lv.push level
+            for key, value of lvmap
+                continue unless value.count > 1
+                console.log "#{key} : #{JSON.stringify value.lv}"
+            wstream.end()
+        return
 
 if cmd is "run"
     async.series [ 
@@ -594,6 +612,7 @@ else if cmd is "level"
     ], (error, result)->
 else if cmd is "info"
     tool.findSameLevel()
+    tool.printAllChars()
 else
     str = """
     ======= tables
