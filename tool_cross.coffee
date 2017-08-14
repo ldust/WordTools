@@ -630,6 +630,31 @@ tool =
 
                 console.log(str)
 
+    showSpecial: ->
+        parseCsv PUZZLE_FILE_PATH, (table) ->
+            data = tool._getPuzzleData(table)
+            for level, puzzle of data
+                sizeMap = {}
+                for word in puzzle.ans
+                    wordSize = word.length
+                    if wordSize < 6
+                        continue
+
+                    if !sizeMap[wordSize]
+                        sizeMap[wordSize] = 1
+                    else
+                        sizeMap[wordSize] = sizeMap[wordSize] + 1
+
+                str = ""
+                for size, count of sizeMap
+                    if count > 1
+                        if str != ""
+                            str += ", "
+                        str += "#{size}-#{count}"
+
+                if str != ""
+                    console.log("#{level}: #{str}")
+
 if cmd is "run"
     async.series [ 
         tool.prepareLevel, 
@@ -658,6 +683,8 @@ else if cmd is "info"
     tool.printAllChars()
 else if cmd is "repeat"
     tool.showRepeat()
+else if cmd is "special"
+    tool.showSpecial()
 else
     str = """
     ======= tables
