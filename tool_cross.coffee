@@ -287,7 +287,7 @@ tool =
         indexTryed = []
         findCount = 0
         matchTable = []
-        for i in [0 ... 500]
+        for i in [0 ... cache.length]
             index = Math.floor(randFun() * cache.length)
             tryCount = 0
             while index in indexTryed and tryCount < 100
@@ -295,6 +295,7 @@ tool =
                 tryCount++
             indexTryed.push index
             puzzle = cache[index]
+
             ret = tool._createLevelByCfg(puzzle, cfg, useNonCon)
             if ret
                 difficulty = Math.floor(tool._calcDifficulty(ret.puzzle))
