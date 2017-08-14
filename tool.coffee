@@ -9,9 +9,9 @@ mode    = argv.m
 
 WORD_FILE_PATH          = "./tables/level_words.csv"
 PUZZLE_FILE_PATH        = "./tables/level_puzzle_out.csv"
-BIG_WORD_LISH_PATH      = "./tables/big_word_list.csv"
+BIG_WORD_LISH_PATH      = "./tables/big.csv"
 RAW_BIG_WORD_LISH_PATH  = "./tables/raw_big_word_list.csv"
-RAW_WORD_FILE_PATH      = "./tables/raw_level_words.csv"
+RAW_WORD_FILE_PATH      = "./tables/words.csv"
 
 mode ?= "word"
 CHALLENGE_LISH_PATH     = "./tables/challenge_puzzle_#{mode}.json"

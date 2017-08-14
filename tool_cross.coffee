@@ -13,6 +13,7 @@ mode    = argv.m
 LEVEL_RULES_PATH        = "./tables/output_rules.csv"
 RAW_BIG_WORD_LISH_PATH  = "./tables/big.csv"
 RAW_WORD_FILE_PATH      = "./tables/words.csv"
+PUZZLE_FILE_PATH        = "./tables/level_puzzle_out_v14.csv"
 
 mode ?= "word"
 CHALLENGE_LISH_PATH     = "./tables/challenge_puzzle_#{mode}.json"
@@ -31,9 +32,16 @@ parseCsv = (path, callback)->
         throw new Error(error) if error?
         callback(table)
 
-tool = 
+tool =
     cmp: (a, b) ->
         sub = b.length - a.length
+        return sub unless sub is 0
+        return -1 if a < b
+        return 1 if a > b
+        return 0
+
+    cmpRepeat: (a, b) ->
+        sub = a.length - b.length
         return sub unless sub is 0
         return -1 if a < b
         return 1 if a > b
@@ -465,6 +473,102 @@ tool =
                 big = big.replace(c, "")
         return true
 
+    _isArrayIncludeEachOther: (arr1, arr2)->
+        for item1 in arr1
+            if item1 in arr2
+                return true
+        return false
+
+    _toUpperCase: (word)->
+        wordUpperCase = ""
+        for c in word
+            wordUpperCase += c if c is "ß"
+            wordUpperCase += c.toUpperCase() if c isnt "ß"
+        return wordUpperCase
+
+    _handleCsv: (table) ->
+        outPut = {}
+        for row, column in table
+            id = row[0]
+            continue if id[0] is "#"
+            newRow = {}
+            outPut[id] = newRow
+            pattern = row[4]
+            bonus = 0
+            newRow.bn = parseInt(bonus) or 0
+            newRow.tp = pattern
+            newRow.ans = []
+            newRow.add = []
+            for item, index in row
+                continue if zim.empty(item)
+                item = item.trim()
+                if item.match(/\s/img)?
+                    throw new Error("Word Contain SpaceChar Error In Row #{column}")
+                if 0 <= index - 5 < pattern.length
+                    newRow.ans.push @_toUpperCase(item)
+                else if index - 5 >= pattern.length
+                    newRow.add.push @_toUpperCase(item)
+            newRow.ans.sort(@cmpRepeat)
+            for item, index in newRow.ans
+                if item.length isnt parseInt(pattern[index])
+                    throw new Error("item not fix pattern #{id}")
+
+            if newRow.ans.length is 0 or (newRow.ans.length isnt pattern.length)
+                throw new Error("Level Table Error In Row #{column}")
+
+            if @_isArrayIncludeEachOther(newRow.ans, newRow.add)
+                throw new Error("Level Table Error In Row #{column}: Item in Ans is also in Add")
+
+        return outPut
+
+    _getPuzzleData: (table)->
+        data = @_handleCsv(table)
+        return data
+
+    isSameArr: (arr1, arr2)->
+        for item in arr1
+            if item not in arr2
+                return false
+        for item in arr2
+            if item not in arr1
+                return false
+        return true
+
+    isSameLevel: (puzzle1, puzzle2)->
+        ans1 = puzzle1.ans
+        ans2 = puzzle2.ans
+        return @isSameArr(ans1, ans2)
+
+    getAllSameLevel: (table)->
+        console.log("check repeat")
+        data = @_getPuzzleData(table)
+        sameLevelArr = []
+
+        hasFoundArr = []
+
+        for level, puzzle of data
+            sameLevel = []
+            hasFoundArr.push level
+            sameLevel.push level
+
+            for levelCmp ,puzzleCmp of data
+                continue if levelCmp in hasFoundArr
+                if not (data[levelCmp]? and puzzle?)
+                    console.log(data[levelCmp], puzzle)
+                if @isSameLevel(data[levelCmp], puzzle)
+                    hasFoundArr.push levelCmp
+                    sameLevel.push levelCmp
+            if sameLevel.length > 1
+                sameLevelArr.push(sameLevel)
+
+        for sameLevel in sameLevelArr
+            console.log("#{sameLevel}")
+        return sameLevelArr
+
+    findSameLevel: ->
+        parseCsv(PUZZLE_FILE_PATH, @getAllSameLevel.bind(@))
+
+
 if cmd is "run"
     async.series [ 
         tool.prepareLevel, 
@@ -488,6 +592,8 @@ else if cmd is "level"
         tool.mapWordHZ,
         tool.createLevels
     ], (error, result)->
+else if cmd is "info"
+    tool.findSameLevel()
 else
     str = """
     ======= tables
