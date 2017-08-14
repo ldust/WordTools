@@ -212,6 +212,19 @@ tool =
             tool.len = JSON.parse fs.readFileSync "./config/len.json", {encoding: "utf8"}
             callback?()
 
+    _controlLevels: (match, levels, cache, id)->
+        if zim.isArray(match)
+            for m in match
+                m.ret.levelId = id
+                levels.push m.ret
+                cache.splice m.index, 1
+            return true
+        else
+            match.ret.levelId = id
+            levels.push match.ret
+            cache.splice match.index, 1
+            return match.success
+
     createLevels: (callback)->
         cabdidateCache = {}
         for wordLen in [2 .. 7]
@@ -233,17 +246,15 @@ tool =
                     cache = cabdidateCache["#{cfg.word_length_max}-0"]
                     match = tool._getMatchFromCache(cache, cfg)
                     if match
-                        levels.push match.ret
-                        cache.splice match.index, 1
-                        unless match.success
+                        success = tool._controlLevels(match, levels, cache, id)
+                        unless success
                             console.log "[WARNING]: #{id} need difficulty:#{cfg.difficulty_max} but use #{match.difficulty}"
                     else
                         cacheMore = cabdidateCache["#{cfg.word_length_max}-1"]
                         matchMore = tool._getMatchFromCache(cacheMore, cfg)
                         if matchMore
-                            levels.push matchMore.ret
-                            cacheMore.splice matchMore.index, 1
-                            if matchMore.success
+                            success = tool._controlLevels(matchMore, levels, cache, id)
+                            if success
                                 console.log "[WARNING]: #{id} use match from 'more table'"
                             else
                                 console.log "[WARNING]: #{id} use match from 'more table' and need difficulty:#{cfg.difficulty_max} but use #{matchMore.difficulty}"
@@ -252,17 +263,15 @@ tool =
                             cache = cabdidateCache["#{cfg.word_length_max}-0"]
                             match = tool._getMatchFromCache(cache, cfg, true)
                             if match
-                                levels.push match.ret
-                                cache.splice match.index, 1
-                                unless match.success
+                                success = tool._controlLevels(match, levels, cache, id)
+                                unless success
                                     console.log "[WARNING]: #{id} use non continuous need difficulty:#{cfg.difficulty_max} but use #{match.difficulty}"
                             else
                                 cacheMore = cabdidateCache["#{cfg.word_length_max}-1"]
                                 matchMore = tool._getMatchFromCache(cacheMore, cfg, true)
                                 if matchMore
-                                    levels.push matchMore.ret
-                                    cacheMore.splice matchMore.index, 1
-                                    if matchMore.success
+                                    success = tool._controlLevels(matchMore, levels, cache, id)
+                                    if success
                                         console.log "[WARNING]: #{id} use non continuous match from 'more table'"
                                     else
                                         console.log "[WARNING]: #{id} use non continuous match from 'more table' and need difficulty:#{cfg.difficulty_max} but use #{matchMore.difficulty}"
@@ -276,6 +285,8 @@ tool =
         randFun = random(100).random
         match = null
         indexTryed = []
+        findCount = 0
+        matchTable = []
         for i in [0 ... 500]
             index = Math.floor(randFun() * cache.length)
             tryCount = 0
@@ -290,7 +301,13 @@ tool =
                 ret.difficulty = difficulty
                 if cfg.difficulty_min <= difficulty <= cfg.difficulty_max
                     match = {ret, index, difficulty, success: true}
-                    break
+                    matchTable.push match
+                    match = null
+                    findCount++
+                    if findCount > 5
+                        break
+                    else
+                        continue
                 else
                     if match
                         if Math.abs(match.difficulty - cfg.difficulty_max) > Math.abs(difficulty - cfg.difficulty_max)
@@ -301,6 +318,11 @@ tool =
             match.ret.success = match.success
             match.ret.id = cfg.id
             return match
+        else if  matchTable.length isnt 0
+            for match in matchTable
+                match.ret.sucess = match.sucess
+                match.ret.id = cfg.id
+            return matchTable
         else
             null
 
@@ -335,7 +357,7 @@ tool =
             row = []
             row.length = COLUMES
             if level
-                row[CONFIGS.id] = index + 1
+                row[CONFIGS.id] = level.levelId
                 row[CONFIGS.difficulty] = level.difficulty
                 row[CONFIGS.success] = if level.success then 1 else 0
                 row[CONFIGS.extCount] = level.add
