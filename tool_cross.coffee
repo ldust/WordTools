@@ -370,6 +370,16 @@ tool =
             wstream.write row.join(",") + "\n"
         wstream.end()
 
+    _filterExtWordWithLength: (ext, min, max)->
+        for word, index in ext
+            if word.length < min or word.length > max
+                ext[index] = 0
+        newExt = []
+        for word in ext
+            if word isnt 0
+                newExt.push word
+        return newExt
+
     _createLevelByCfg: (level, cfg, useNonCon)->
         puzzleOrigin = level.puzzle.concat()
         ## rm word length not match
@@ -423,6 +433,7 @@ tool =
             puzzleOrigin.splice(index, 1)
 
         ext = level.extra.concat(puzzleOrigin, puzzleFrequencyUp)
+        ext = tool._filterExtWordWithLength(ext, cfg.word_length_min, cfg.word_length_max)
         chars = tool.allChars(puzzle)
         if chars.length is cfg.word_length_max or chars.length is cfg.word_length_max + 1
             size = cfg.word_length_max + 2
