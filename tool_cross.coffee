@@ -749,7 +749,7 @@ else if cmd is "repeat"
     tool.showRepeat()
 else if cmd is "special"
     tool.showSpecial()
-else if cmd is "findSameWordLevel"
+else if cmd is "find"
     tool.showRepeatWord()
 else
     str = """
