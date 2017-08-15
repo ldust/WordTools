@@ -677,6 +677,37 @@ tool =
                 if str != ""
                     console.log("#{level}: #{str}")
 
+    showRepeatWord: ->
+        parseCsv PUZZLE_FILE_PATH, (table) ->
+            data = tool._getPuzzleData(table)
+            puzzleCount = Object.keys(data).length
+
+            for level, puzzle of data
+                wordMap = {}
+                for word in puzzle.ans
+                    wordMap[word] = [level]
+
+                for num in [1...puzzleCount - level]
+                    nextLevelNum = Number(level) + Number(num)
+                    nextLevel = nextLevelNum.toString()
+                    if nextLevelNum >= puzzleCount
+                        break
+
+                    nextPuzzle = data[nextLevel]
+                    count = 0
+                    repeatWord = []
+                    for nextWord in nextPuzzle.ans
+                        if wordMap[nextWord]
+                            repeatWord.push nextWord
+                            count++
+                    if Math.abs(puzzle.ans.length - nextPuzzle.ans.length) <= 1
+                        if puzzle.ans.length < nextPuzzle.ans.length
+                            min = puzzle.ans.length
+                        else
+                            min = nextPuzzle.ans.length
+                        if count >= min - 1 and count >= 3
+                            console.log("level:#{level}, nextLevel:#{nextLevel}, repeatWord:#{repeatWord}")
+
 if cmd is "run"
     async.series [ 
         tool.prepareLevel, 
@@ -707,6 +738,8 @@ else if cmd is "repeat"
     tool.showRepeat()
 else if cmd is "special"
     tool.showSpecial()
+else if cmd is "findSameWordLevel"
+    tool.showRepeatWord()
 else
     str = """
     ======= tables
