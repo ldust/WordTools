@@ -217,7 +217,6 @@ tool =
             for m in match
                 m.ret.levelId = id
                 levels.push m.ret
-                cache.splice m.index, 1
             return true
         else
             match.ret.levelId = id
@@ -295,13 +294,13 @@ tool =
                 tryCount++
             indexTryed.push index
             puzzle = cache[index]
-
             ret = tool._createLevelByCfg(puzzle, cfg, useNonCon)
             if ret
                 difficulty = Math.floor(tool._calcDifficulty(ret.puzzle))
                 ret.difficulty = difficulty
                 if cfg.difficulty_min <= difficulty <= cfg.difficulty_max
                     match = {ret, index, difficulty, success: true}
+                    cache.splice(index, 1)
                     matchTable.push match
                     match = null
                     findCount++
