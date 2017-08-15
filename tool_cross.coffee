@@ -754,8 +754,8 @@ else if cmd is "findSameWordLevel"
 else
     str = """
     ======= tables
-    === raw_big_word_list.csv -> 大词库
-    === raw_level_words.csv   -> 小词库
+    === big.csv -> 大词库
+    === words.csv   -> 小词库
     === output_rules.csv      -> 关卡规则
     === hz.csv                -> 词频表
 
@@ -775,6 +775,12 @@ else
 
     coffee tool_cross.coffee -c level
         随机关卡，当配置变化时需要运行
+
+    coffee tool_cross.coffee -c repeat
+        显示n关内完全相同的单词
+
+    coffee tool_cross.coffee -c find
+        显示关卡间重复单词数大于等于3的行数和单词
 
     """
     console.log str
