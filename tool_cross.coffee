@@ -243,14 +243,14 @@ tool =
                     console.log "[Error]: #{id}: letter_max(#{cfg.letter_max}) can't smaller than cfg.word_length_max(#{cfg.word_length_max})"
                 else
                     cache = cabdidateCache["#{cfg.word_length_max}-0"]
-                    match = tool._getMatchFromCache(cache, cfg)
+                    match = tool._getMatchFromCache(cache, cfg, false, levels)
                     if match
                         success = tool._controlLevels(match, levels, cache, id)
                         unless success
                             console.log "[WARNING]: #{id} need difficulty:#{cfg.difficulty_max} but use #{match.difficulty}"
                     else
                         cacheMore = cabdidateCache["#{cfg.word_length_max}-1"]
-                        matchMore = tool._getMatchFromCache(cacheMore, cfg)
+                        matchMore = tool._getMatchFromCache(cacheMore, cfg, false, levels)
                         if matchMore
                             success = tool._controlLevels(matchMore, levels, cacheMore, id)
                             if success
@@ -260,14 +260,14 @@ tool =
                         else
                             console.log "[WARNING]: #{id}  use non continuous func"
                             cache = cabdidateCache["#{cfg.word_length_max}-0"]
-                            match = tool._getMatchFromCache(cache, cfg, true)
+                            match = tool._getMatchFromCache(cache, cfg, true, levels)
                             if match
                                 success = tool._controlLevels(match, levels, cache, id)
                                 unless success
                                     console.log "[WARNING]: #{id} use non continuous need difficulty:#{cfg.difficulty_max} but use #{match.difficulty}"
                             else
                                 cacheMore = cabdidateCache["#{cfg.word_length_max}-1"]
-                                matchMore = tool._getMatchFromCache(cacheMore, cfg, true)
+                                matchMore = tool._getMatchFromCache(cacheMore, cfg, true, levels)
                                 if matchMore
                                     success = tool._controlLevels(matchMore, levels, cacheMore, id)
                                     if success
@@ -280,7 +280,30 @@ tool =
             callback?()
             return
 
-    _getMatchFromCache: (cache, cfg, useNonCon)->
+    _isSameWordsMoreThanThree: (puzzle1, puzzle2)->
+        count = 0
+        for puz1 in puzzle1
+            if puz1 in puzzle2
+                count++
+        if count >= 3
+            return true
+        count = 0
+        for puz2 in puzzle2
+            if puz2 in puzzle1
+                count++
+        if count >= 3
+            return true
+        return false
+
+    _checkRepeatOnCreate: (ret, levels)->
+        for level in levels
+            puzzle = level.puzzle
+            isHaveSameLevel = @_isSameWordsMoreThanThree(puzzle, ret.puzzle)
+            if isHaveSameLevel
+                return true
+        return false
+
+    _getMatchFromCache: (cache, cfg, useNonCon, levels)->
         randFun = random(100).random
         match = null
         indexTryed = []
@@ -296,6 +319,8 @@ tool =
             puzzle = cache[index]
             ret = tool._createLevelByCfg(puzzle, cfg, useNonCon)
             if ret
+                isHaveSameLevel = @_checkRepeatOnCreate(ret, levels)
+                continue if isHaveSameLevel
                 difficulty = Math.floor(tool._calcDifficulty(ret.puzzle))
                 ret.difficulty = difficulty
                 if cfg.difficulty_min <= difficulty <= cfg.difficulty_max
@@ -304,7 +329,7 @@ tool =
                     matchTable.push match
                     match = null
                     findCount++
-                    if findCount > 5
+                    if findCount > 0
                         break
                     else
                         continue
@@ -705,6 +730,7 @@ tool =
                         break
 
                     nextPuzzle = data[nextLevel]
+                    continue unless nextPuzzle
                     count = 0
                     repeatWord = []
                     for nextWord in nextPuzzle.ans
