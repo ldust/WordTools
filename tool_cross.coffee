@@ -253,7 +253,7 @@ tool =
                         cacheMore = cabdidateCache["#{cfg.word_length_max}-1"]
                         matchMore = tool._getMatchFromCache(cacheMore, cfg)
                         if matchMore
-                            success = tool._controlLevels(matchMore, levels, cache, id)
+                            success = tool._controlLevels(matchMore, levels, cacheMore, id)
                             if success
                                 console.log "[WARNING]: #{id} use match from 'more table'"
                             else
@@ -270,7 +270,7 @@ tool =
                                 cacheMore = cabdidateCache["#{cfg.word_length_max}-1"]
                                 matchMore = tool._getMatchFromCache(cacheMore, cfg, true)
                                 if matchMore
-                                    success = tool._controlLevels(matchMore, levels, cache, id)
+                                    success = tool._controlLevels(matchMore, levels, cacheMore, id)
                                     if success
                                         console.log "[WARNING]: #{id} use non continuous match from 'more table'"
                                     else
