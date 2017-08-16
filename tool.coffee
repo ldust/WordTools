@@ -581,8 +581,31 @@ tool =
                 throw new Error("Level Table Error In Row #{column}")
 
             if @isArrayIncludeEachOther(newRow.ans, newRow.add)
-                throw new Error("Level Table Error In Row #{column}: Item in Ans is also in Add")
-        return outPut     
+                console.log("Level Table Error In Row #{column}: Item in Ans is also in Add")
+                #throw new Error("Level Table Error In Row #{column}: Item in Ans is also in Add")
+        return outPut
+
+    showRepeatWordsInCurrentLevel: ->
+        parseCsv PUZZLE_FILE_PATH, (table) ->
+            data = tool.getPuzzleData(table)
+            for level, puzzle of data
+                allWords = []
+                for word in puzzle.ans
+                    allWords.push word
+                for word in puzzle.add
+                    allWords.push word
+                repeatWord = undefined
+                for word, index1 in allWords
+                    for wordCmp, index2 in allWords
+                        continue if index2 <= index1
+                        if word is wordCmp
+                            repeatWord = word
+                            break
+                    break if repeatWord
+                if repeatWord
+                    console.log("level:#{level}, word:#{repeatWord}")
+
+
 
 if cmd is "extra"
     tool.fillExtra()
@@ -609,6 +632,8 @@ else if cmd is "permutate"
     tool.showPermutate()
 else if cmd is "frequency"
     tool.showFrequency()
+else if cmd is "repeat_in_one_level"
+    tool.showRepeatWordsInCurrentLevel()
 else
     str = """
     raw_big_word_list.csv -> 大词库
@@ -654,6 +679,9 @@ else
 
     coffee tool.coffee -c frequency
         输出词频
+
+    coffee tool.coffee -c repeat_in_one_level
+        找出同一关内出现相同词的信息
 
     """
     console.log str
