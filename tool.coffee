@@ -331,10 +331,10 @@ tool =
             console.log("#{sameLevel}")
         return sameLevelArr
 
-    getPuzzleData: (table)->
+    getPuzzleData: (table, directCheck)->
         # dataStr = fs.readFileSync path, {encoding: "utf8"}
         # data = JSON.parse(dataStr)
-        data = @handleCsv(table)
+        data = @handleCsv(table, directCheck)
         return data
 
     isSameLevel: (puzzle1, puzzle2)->
@@ -549,7 +549,7 @@ tool =
                         console.log "\"#{item}\","
             return
 
-    handleCsv: (table) ->
+    handleCsv: (table, directCheck) ->
         outPut = {}
         for row, column in table
             id = row[0]
@@ -581,13 +581,16 @@ tool =
                 throw new Error("Level Table Error In Row #{column}")
 
             if @isArrayIncludeEachOther(newRow.ans, newRow.add)
-                console.log("Level Table Error In Row #{column}: Item in Ans is also in Add")
-                #throw new Error("Level Table Error In Row #{column}: Item in Ans is also in Add")
+                if directCheck
+                    console.log("Level Table Error In Row #{column}: Item in Ans is also in Add")
+                else
+                    throw new Error("Level Table Error In Row #{column}: Item in Ans is also in Add")
         return outPut
 
     showRepeatWordsInCurrentLevel: ->
         parseCsv PUZZLE_FILE_PATH, (table) ->
-            data = tool.getPuzzleData(table)
+            directCheck = true
+            data = tool.getPuzzleData(table, directCheck)
             for level, puzzle of data
                 allWords = []
                 for word in puzzle.ans
@@ -604,8 +607,6 @@ tool =
                     break if repeatWord
                 if repeatWord
                     console.log("level:#{level}, word:#{repeatWord}")
-
-
 
 if cmd is "extra"
     tool.fillExtra()
