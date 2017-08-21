@@ -275,32 +275,55 @@ tool =
                                     else
                                         console.log "[WARNING]: #{id} use non continuous match from 'more table' and need difficulty:#{cfg.difficulty_max} but use #{matchMore.difficulty}"
                                 else
-                                    console.log "[error]: #{id} has no match"
+                                    console.log "[error]: #{id} has no match:#{JSON.stringify cfg}"
             tool._saveLevels(levels)
             callback?()
             return
 
-    _isSameWordsMoreThanThree: (puzzle1, puzzle2)->
+    _getSameWordNumber: (puzzle1, puzzle2)->
         count = 0
         for puz1 in puzzle1
             if puz1 in puzzle2
                 count++
-        if count >= 3
-            return true
-        count = 0
-        for puz2 in puzzle2
-            if puz2 in puzzle1
-                count++
-        if count >= 3
-            return true
-        return false
+        return count
+
+    _getTwoWordsInfo: (puzzle1, puzzle2)->
+        sameWords = []
+        sameCount = 0
+        for word1 in puzzle1
+            if word1 in puzzle2
+                sameCount++
+                sameWords.push word1
+        return [0, 0] if sameCount is 0
+        sameFirstLetterNumber = 0
+        cmdWords = []
+        for word1 in puzzle1
+            continue if word1 in sameWords
+            for word2 in puzzle2
+                continue if word2 in sameWords
+                continue if word2 in cmdWords
+                if word1[0] is word2[0]
+                    cmdWords.push word2
+                    sameFirstLetterNumber++
+                    break
+        return [sameCount, sameFirstLetterNumber]
+
+    _conditionCheck: (x, y, z, ds)->
+        #x: 当前单词组长度
+        # y: 对比的单词组长度
+        # z: 重复的单词数
+        # ds: 不重复的单词首字母相同数
+        #console.log("x:#{x}, y:#{y}, z:#{z}, ds:#{ds}")
 
     _checkRepeatOnCreate: (ret, levels)->
+        x = ret.puzzle.length
         for level in levels
             puzzle = level.puzzle
-            isHaveSameLevel = @_isSameWordsMoreThanThree(puzzle, ret.puzzle)
-            if isHaveSameLevel
-                return true
+            y = puzzle.length
+            [z, ds] = @_getTwoWordsInfo(puzzle, ret.puzzle)
+            @_conditionCheck(x, y, z, ds)
+            return true if z >= 4
+
         return false
 
     _getMatchFromCache: (cache, cfg, useNonCon, levels)->
@@ -310,6 +333,8 @@ tool =
         findCount = 0
         matchTable = []
         for i in [0 ... cache.length]
+            if i isnt 0 and i %1000 is 0
+                console.log("try i:#{i} count......,total #{cache.length}")
             index = Math.floor(randFun() * cache.length)
             tryCount = 0
             while index in indexTryed and tryCount < 100
@@ -777,6 +802,8 @@ else if cmd is "special"
     tool.showSpecial()
 else if cmd is "find"
     tool.showRepeatWord()
+else if cmd is "test"
+    tool._getSameFirstLetterNumber()
 else
     str = """
     ======= tables
