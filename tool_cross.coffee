@@ -280,13 +280,6 @@ tool =
             callback?()
             return
 
-    _getSameWordNumber: (puzzle1, puzzle2)->
-        count = 0
-        for puz1 in puzzle1
-            if puz1 in puzzle2
-                count++
-        return count
-
     _getTwoWordsInfo: (puzzle1, puzzle2)->
         sameWords = []
         sameCount = 0
