@@ -699,15 +699,17 @@ tool =
                 else if index - wordBeginIndex >= pattern.length
                     newRow.add.push @_toUpperCase(item)
             newRow.ans.sort(@cmpRepeat)
-            console.log("newRow:#{JSON.stringify newRow}, column:#{column}")
             for item, index in newRow.ans
                 if item.length isnt parseInt(pattern[index])
+                    console.log("newRow:#{JSON.stringify newRow}, column:#{column}")
                     throw new Error("item not fix pattern #{id}")
 
             if newRow.ans.length is 0 or (newRow.ans.length isnt pattern.length)
+                console.log("newRow:#{JSON.stringify newRow}, column:#{column}")
                 throw new Error("Level Table Error In Row #{column}")
 
             if @_isArrayIncludeEachOther(newRow.ans, newRow.add)
+                console.log("newRow:#{JSON.stringify newRow}, column:#{column}")
                 throw new Error("Level Table Error In Row #{column}: Item in Ans is also in Add")
 
         return outPut
