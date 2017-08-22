@@ -610,6 +610,7 @@ tool =
         keys = []
         level_config = {}
         for row, i in table
+            break if row[0] is ""
             if i is 0
                 keys = row
             else if i in [1,2]
