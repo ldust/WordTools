@@ -258,7 +258,7 @@ tool =
                         levels.push match.ret
                         cache.splice match.index, 1
                         unless match.success
-                            console.log "[WARNING]: #{id} need difficulty:#{cfg.difficulty_min} but use #{match.difficulty}"
+                            console.log "[WARNING]: #{id} need difficulty:[#{[cfg.difficulty_min, cfg.difficulty_max]}] but use #{match.difficulty}"
                     else
                         cacheMore = cabdidateCache["#{cfg.word_length_max}-1"]
                         matchMore = tool._getMatchFromCache(cacheMore, cfg, true, levels)
@@ -268,7 +268,7 @@ tool =
                             if matchMore.success
                                 console.log "[WARNING]: #{id} use match from 'more table'"
                             else
-                                console.log "[WARNING]: #{id} use match from 'more table' and need difficulty:#{cfg.difficulty_min} but use #{matchMore.difficulty}"
+                                console.log "[WARNING]: #{id} use match from 'more table' and need difficulty:[#{[cfg.difficulty_min, cfg.difficulty_max]}] but use #{matchMore.difficulty}"
                         else
                             console.log "[error]: #{id} has no match:#{JSON.stringify cfg}"
 
@@ -418,7 +418,7 @@ tool =
                         if disSameWordCount < 2
                             DEBUG("error id 3-2-1")
                             return true
-                        if firstLetterSame > 2
+                        if firstLetterSame > 4
                             DEBUG("error id 3-2-2")
                             return true
             if 81 <= levelIndex <= 100
