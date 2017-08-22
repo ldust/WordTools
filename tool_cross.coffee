@@ -456,7 +456,7 @@ tool =
                     break
                 else
                     if match
-                        if Math.abs(match.difficulty - cfg.difficulty_min) > Math.abs(difficulty - cfg.difficulty_min)
+                        if Math.abs(difficulty - cfg.difficulty_min) < Math.abs(match.difficulty - cfg.difficulty_min)
                             match = {ret, index, difficulty, success: false}
                     else
                         match = {ret, index, difficulty, success: false}
@@ -498,7 +498,7 @@ tool =
             row = []
             row.length = COLUMES
             if level
-                row[CONFIGS.id] = level.levelId
+                row[CONFIGS.id] = index + 1
                 row[CONFIGS.difficulty] = level.difficulty
                 row[CONFIGS.success] = if level.success then 1 else 0
                 row[CONFIGS.extCount] = level.add
@@ -594,10 +594,11 @@ tool =
 
     _getHzRatio: (word)->
         hz = Hz[word] or 0
+        targetRatio = 0
         for item in tool.hz
-            if hz <= item[0]
-                return item[1]
-        return item[1]
+            if hz >= item[0]
+                targetRatio = item[1]
+        return targetRatio
 
     _calcDifficulty: (words)->
         score = 0
