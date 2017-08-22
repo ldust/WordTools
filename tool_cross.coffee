@@ -9,11 +9,14 @@ random  = require './ZimConsistentRandom'
 
 cmd     = argv.c
 mode    = argv.m
+from    = argv.f
 
 LEVEL_RULES_PATH        = "./tables/output_rules.csv"
 RAW_BIG_WORD_LISH_PATH  = "./tables/big.csv"
 RAW_WORD_FILE_PATH      = "./tables/words.csv"
+
 PUZZLE_FILE_PATH        = "./output/level.csv"
+GOOGLE_FILE_LEVEL_OUT   = "./tables/level_puzzle_out_en.csv"
 
 mode ?= "word"
 CHALLENGE_LISH_PATH     = "./tables/challenge_puzzle_#{mode}.json"
@@ -258,7 +261,7 @@ tool =
                         levels.push match.ret
                         cache.splice match.index, 1
                         unless match.success
-                            console.log "[WARNING]: #{id} need difficulty:[#{[cfg.difficulty_min, cfg.difficulty_max]}] but use #{match.difficulty}"
+                            console.log "[WARNING]: #{id} need difficulty:[#{[cfg.difficulty_min, cfg.difficulty_max]}] but use #{match.difficulty}--from file :#{cfg.word_length_max}-0"
                     else
                         cacheMore = cabdidateCache["#{cfg.word_length_max}-1"]
                         matchMore = tool._getMatchFromCache(cacheMore, cfg, true, levels)
@@ -266,9 +269,9 @@ tool =
                             levels.push matchMore.ret
                             cacheMore.splice matchMore.index, 1
                             if matchMore.success
-                                console.log "[WARNING]: #{id} use match from 'more table'"
+                                console.log "[WARNING]: #{id} use match from 'more table'--from file :#{cfg.word_length_max}-1"
                             else
-                                console.log "[WARNING]: #{id} use match from 'more table' and need difficulty:[#{[cfg.difficulty_min, cfg.difficulty_max]}] but use #{matchMore.difficulty}"
+                                console.log "[WARNING]: #{id} use match from 'more table' and need difficulty:[#{[cfg.difficulty_min, cfg.difficulty_max]}] but use #{matchMore.difficulty}--from file :#{cfg.word_length_max}-1"
                         else
                             console.log "[error]: #{id} has no match:#{JSON.stringify cfg}"
 
@@ -673,22 +676,30 @@ tool =
             continue if column is 0
             newRow = {}
             outPut[id] = newRow
-            pattern = row[5]
+            if from is "google"
+                pattern = row[4]
+            else
+                pattern = row[5]
             bonus = 0
             newRow.bn = parseInt(bonus) or 0
             newRow.tp = pattern
             newRow.ans = []
             newRow.add = []
+            if from is "google"
+                wordBeginIndex = 5
+            else
+                wordBeginIndex = 6
             for item, index in row
                 continue if zim.empty(item)
                 item = item.trim()
                 if item.match(/\s/img)?
                     throw new Error("Word Contain SpaceChar Error In Row #{column}")
-                if 0 <= index - 6 < pattern.length
+                if 0 <= index - wordBeginIndex < pattern.length
                     newRow.ans.push @_toUpperCase(item)
-                else if index - 6 >= pattern.length
+                else if index - wordBeginIndex >= pattern.length
                     newRow.add.push @_toUpperCase(item)
             newRow.ans.sort(@cmpRepeat)
+            console.log("newRow:#{JSON.stringify newRow}, column:#{column}")
             for item, index in newRow.ans
                 if item.length isnt parseInt(pattern[index])
                     throw new Error("item not fix pattern #{id}")
@@ -746,7 +757,12 @@ tool =
         return sameLevelArr
 
     findSameLevel: ->
-        parseCsv(PUZZLE_FILE_PATH, @getAllSameLevel.bind(@))
+        fileName = 0
+        if from is "google"
+            fileName = GOOGLE_FILE_LEVEL_OUT
+        else 
+            fileName = PUZZLE_FILE_PATH
+        parseCsv(fileName, @getAllSameLevel.bind(@))
 
     printAllChars: ->
         parseCsv PUZZLE_FILE_PATH, (table) ->
@@ -899,9 +915,10 @@ else if cmd is "special"
 else if cmd is "find"
     tool.showRepeatWord()
 else if cmd is "test"
-    puzzle = ["abcd", "abc", "abcc", "ab"]
-    levels = [{puzzle:["abcc", "abc", "abcc", "ab"]}, {puzzle:["abcdc", "abc", "abcc", "ab"]}]
-    tool._checkTargetWordsRepeat(puzzle, levels)
+    tool.fillExtra()
+#    puzzle = ["abcd", "abc", "abcc", "ab"]
+#    levels = [{puzzle:["abcc", "abc", "abcc", "ab"]}, {puzzle:["abcdc", "abc", "abcc", "ab"]}]
+#    tool._checkTargetWordsRepeat(puzzle, levels)
 else
     str = """
     ======= tables
