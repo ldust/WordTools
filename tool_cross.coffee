@@ -26,6 +26,14 @@ PATTERN_INDEX           = 3
 ANS_START_INDEX         = 4
 EXTRA_START_INDEX       = 100
 
+isShowLog = false
+
+if isShowLog
+    DEBUG = console.log.bind(console)
+else
+    DEBUG = ->
+
+
 parseCsv = (path, callback)->
     data = fs.readFileSync path, {encoding: "utf8"}
     parse data, {delimiter: ','}, (error, table)->
@@ -132,13 +140,12 @@ tool =
                         repeat = true
                         for cmInd in [0 ... index]
                             cmp = cache[cmInd]
-                            continue if cmp.length isnt main.length
                             for w in cmp
                                 unless w in main
                                     repeat = false
                                     break
                             break if repeat = false
-                        if repeat
+                        if repeat and index isnt 0
                             cache.splice(index, 1)
 
                 fs.writeFileSync "./tables/_tmp_#{wordLen}-#{i}.json", JSON.stringify cache
@@ -163,6 +170,7 @@ tool =
         console.log "[Remove non-continuous]"
         for wordLen in [2 .. 7]
             for p in [0 .. 1]
+                count = 0
                 console.log("=====> checking #{wordLen}-#{p}")
                 cache = JSON.parse fs.readFileSync "./tables/_tmp_#{wordLen}-#{p}.json", {encoding: "utf8"}
                 for puzzle, index in cache by -1
@@ -175,8 +183,10 @@ tool =
                             continuous = false
                             break
                     unless continuous
-                        cache.splice(index, 1)
-                fs.writeFileSync "./tables/_tmp_#{wordLen}-#{p}.json", JSON.stringify cache
+                        count++
+                        #cache.splice(index, 1)
+                console.log("#{wordLen}-#{p}, nonContinuous count:#{count}")
+                #fs.writeFileSync "./tables/_tmp_#{wordLen}-#{p}.json", JSON.stringify cache
         callback?()
 
     fillExtra: (callback)->
@@ -243,39 +253,25 @@ tool =
                     console.log "[Error]: #{id}: letter_max(#{cfg.letter_max}) can't smaller than cfg.word_length_max(#{cfg.word_length_max})"
                 else
                     cache = cabdidateCache["#{cfg.word_length_max}-0"]
-                    match = tool._getMatchFromCache(cache, cfg, false, levels)
+                    match = tool._getMatchFromCache(cache, cfg, true, levels)
                     if match
-                        success = tool._controlLevels(match, levels, cache, id)
-                        unless success
-                            console.log "[WARNING]: #{id} need difficulty:#{cfg.difficulty_max} but use #{match.difficulty}"
+                        levels.push match.ret
+                        cache.splice match.index, 1
+                        unless match.success
+                            console.log "[WARNING]: #{id} need difficulty:#{cfg.difficulty_min} but use #{match.difficulty}"
                     else
                         cacheMore = cabdidateCache["#{cfg.word_length_max}-1"]
-                        matchMore = tool._getMatchFromCache(cacheMore, cfg, false, levels)
+                        matchMore = tool._getMatchFromCache(cacheMore, cfg, true, levels)
                         if matchMore
-                            success = tool._controlLevels(matchMore, levels, cacheMore, id)
-                            if success
+                            levels.push matchMore.ret
+                            cacheMore.splice matchMore.index, 1
+                            if matchMore.success
                                 console.log "[WARNING]: #{id} use match from 'more table'"
                             else
-                                console.log "[WARNING]: #{id} use match from 'more table' and need difficulty:#{cfg.difficulty_max} but use #{matchMore.difficulty}"
+                                console.log "[WARNING]: #{id} use match from 'more table' and need difficulty:#{cfg.difficulty_min} but use #{matchMore.difficulty}"
                         else
-                            console.log "[WARNING]: #{id}  use non continuous func"
-                            cache = cabdidateCache["#{cfg.word_length_max}-0"]
-                            match = tool._getMatchFromCache(cache, cfg, true, levels)
-                            if match
-                                success = tool._controlLevels(match, levels, cache, id)
-                                unless success
-                                    console.log "[WARNING]: #{id} use non continuous need difficulty:#{cfg.difficulty_max} but use #{match.difficulty}"
-                            else
-                                cacheMore = cabdidateCache["#{cfg.word_length_max}-1"]
-                                matchMore = tool._getMatchFromCache(cacheMore, cfg, true, levels)
-                                if matchMore
-                                    success = tool._controlLevels(matchMore, levels, cacheMore, id)
-                                    if success
-                                        console.log "[WARNING]: #{id} use non continuous match from 'more table'"
-                                    else
-                                        console.log "[WARNING]: #{id} use non continuous match from 'more table' and need difficulty:#{cfg.difficulty_max} but use #{matchMore.difficulty}"
-                                else
-                                    console.log "[error]: #{id} has no match:#{JSON.stringify cfg}"
+                            console.log "[error]: #{id} has no match:#{JSON.stringify cfg}"
+
             tool._saveLevels(levels)
             callback?()
             return
@@ -287,7 +283,6 @@ tool =
             if word1 in puzzle2
                 sameCount++
                 sameWords.push word1
-        return [0, 0] if sameCount is 0
         sameFirstLetterNumber = 0
         cmdWords = []
         for word1 in puzzle1
@@ -299,23 +294,140 @@ tool =
                     cmdWords.push word2
                     sameFirstLetterNumber++
                     break
-        return [sameCount, sameFirstLetterNumber]
+        disSameWordCount = 0
+        for word1 in puzzle1
+            unless word1 in puzzle2
+                disSameWordCount++
+        return [sameCount, sameFirstLetterNumber, disSameWordCount]
 
-    _conditionCheck: (x, y, z, ds)->
-        #x: 当前单词组长度
-        # y: 对比的单词组长度
-        # z: 重复的单词数
-        # ds: 不重复的单词首字母相同数
-        #console.log("x:#{x}, y:#{y}, z:#{z}, ds:#{ds}")
+    _checkTargetWordsRepeat: (puzzle, levels)->
+        isRepeat = false
+        for cmpLevel in levels
+            cmpPuzzle = cmpLevel.puzzle
+            continue if cmpPuzzle.length isnt puzzle.length
+            sameCount = 0
+            for word in puzzle
+                continue unless word in cmpPuzzle
+                sameCount++
+            if sameCount is puzzle.length
+                isRepeat = true
+        return isRepeat
 
     _checkRepeatOnCreate: (ret, levels)->
-        x = ret.puzzle.length
-        for level in levels
-            puzzle = level.puzzle
-            y = puzzle.length
-            [z, ds] = @_getTwoWordsInfo(puzzle, ret.puzzle)
-            @_conditionCheck(x, y, z, ds)
-            return true if z >= 4
+        return if levels.length is 0
+        return true if @_checkTargetWordsRepeat(ret.puzzle, levels)
+        curChars = tool.allChars(ret.puzzle)
+        letterLength = curChars.length
+        minLength = if levels.length >= 100 then levels.length - 100 else 0
+        levelIndex = 1
+        for index in [levels.length - 1..minLength]
+            puzzle = levels[index].puzzle
+            targetChars = tool.allChars(puzzle)
+            disLetterNum = zim.diffWordLetter(curChars, targetChars).length
+            [sameWordsCount, firstLetterSame, disSameWordCount] = @_getTwoWordsInfo(puzzle, ret.puzzle)
+            if 1 <= levelIndex <= 5
+                if sameWordsCount > 1
+                    DEBUG("error id 15 - 1")
+                    return true
+            if 6 <= levelIndex <= 10
+                    if sameWordsCount > 1
+                        DEBUG("error id 14 - 1")
+                        return true
+                    if disSameWordCount < letterLength - 3
+                        DEBUG("error id 14 - 2")
+                        return true
+            if 11 <= levelIndex <= 20
+                if 3 <= letterLength <= 4
+                    if sameWordsCount > 1
+                        DEBUG("error id 13-1-2")
+                        return true
+                if 5 <= letterLength <= 7
+                    if disSameWordCount < letterLength - 3
+                        DEBUG("error id 13-2-2")
+                        return true
+            if 21 <= levelIndex <= 40
+                switch disLetterNum
+                    when 0
+                        if 3 <= letterLength <= 4
+                            if sameWordsCount isnt 0
+                                DEBUG("error id 8-1")
+                                return true
+                        if 5 <= letterLength <= 7
+                            if disSameWordCount < 3
+                                DEBUG("error id 8-2-1")
+                                return true
+                            if firstLetterSame > 2
+                                DEBUG("error id 8-2-2")
+                                return true
+                    when 1
+                        if 3 <= letterLength <= 4
+                            if sameWordsCount > 1
+                                DEBUG("error id 9-1")
+                                return true
+                        if 5 <= letterLength <= 7
+                            if disSameWordCount < 3
+                                DEBUG("error id 9-2-1")
+                                return true
+                            if firstLetterSame > 2
+                                DEBUG("error id 9-2-1")
+                                return true
+                    when 2
+                        if 3 <= letterLength <= 4
+                            if disSameWordCount < 2
+                                DEBUG("error id 10-1")
+                                return true
+
+                        if 5 <= letterLength <= 7
+                            if disSameWordCount < 3
+                                DEBUG("error id 10-2")
+                                return true
+
+            if 41 <= levelIndex <= 60
+                switch disLetterNum
+                    when 0
+                        if 3 <= letterLength <= 4
+                            if sameWordsCount > 1
+                                DEBUG("error id 5-1")
+                                return true
+                        if 5 <= letterLength <= 7
+                            if disSameWordCount < 3
+                                DEBUG("error id 5-2-1")
+                                return true
+                            if firstLetterSame > 3
+                                DEBUG("error id 5-2-1")
+                                return true
+                    when 1
+                        if 3 <= letterLength <= 4
+                            if disSameWordCount < 2
+                                DEBUG("error id 6-1")
+                                return true
+                        if 5 <= letterLength <= 7
+                            if disSameWordCount < 3
+                                DEBUG("error id 6-2-1")
+                                return true
+            if 61 <= levelIndex <= 80
+                if disLetterNum <= 1
+                    if 3 <= letterLength <= 4
+                        if disSameWordCount < 2
+                            DEBUG("error id 3-1-1")
+                            return true
+                        if firstLetterSame > 2
+                            DEBUG("error id 3-1-2")
+                            return true
+                    if 5 <= letterLength <= 7
+                        if disSameWordCount < 2
+                            DEBUG("error id 3-2-1")
+                            return true
+                        if firstLetterSame > 2
+                            DEBUG("error id 3-2-2")
+                            return true
+            if 81 <= levelIndex <= 100
+                if disLetterNum is 0
+                    if disSameWordCount < 2
+                        DEBUG("error id 1")
+                        return true
+
+            levelIndex++
 
         return false
 
@@ -323,11 +435,9 @@ tool =
         randFun = random(100).random
         match = null
         indexTryed = []
-        findCount = 0
-        matchTable = []
         for i in [0 ... cache.length]
             if i isnt 0 and i %1000 is 0
-                console.log("try i:#{i} count......,total #{cache.length}")
+                console.log("try count:#{i} --------------->total:#{cache.length}")
             index = Math.floor(randFun() * cache.length)
             tryCount = 0
             while index in indexTryed and tryCount < 100
@@ -343,17 +453,10 @@ tool =
                 ret.difficulty = difficulty
                 if cfg.difficulty_min <= difficulty <= cfg.difficulty_max
                     match = {ret, index, difficulty, success: true}
-                    cache.splice(index, 1)
-                    matchTable.push match
-                    match = null
-                    findCount++
-                    if findCount > 0
-                        break
-                    else
-                        continue
+                    break
                 else
                     if match
-                        if Math.abs(match.difficulty - cfg.difficulty_max) > Math.abs(difficulty - cfg.difficulty_max)
+                        if Math.abs(match.difficulty - cfg.difficulty_min) > Math.abs(difficulty - cfg.difficulty_min)
                             match = {ret, index, difficulty, success: false}
                     else
                         match = {ret, index, difficulty, success: false}
@@ -361,11 +464,6 @@ tool =
             match.ret.success = match.success
             match.ret.id = cfg.id
             return match
-        else if  matchTable.length isnt 0
-            for match in matchTable
-                match.ret.sucess = match.sucess
-                match.ret.id = cfg.id
-            return matchTable
         else
             null
 
@@ -465,6 +563,7 @@ tool =
                         else
                             targetN--
                     unless reFound
+                        DEBUG("reFound error")
                         return
                 else
                     return
@@ -486,9 +585,11 @@ tool =
                 add = cross.add.length
                 ext = cross.add.concat(cross.ext)
                 return {chars, puzzle, ext, size, add}
-            else 
+            else
+                #console.log("cross error:#{puzzle}")
                 null
         else
+            console.log("chars length not match")
             null
 
     _getHzRatio: (word)->
@@ -796,7 +897,9 @@ else if cmd is "special"
 else if cmd is "find"
     tool.showRepeatWord()
 else if cmd is "test"
-    tool._getSameFirstLetterNumber()
+    puzzle = ["abcd", "abc", "abcc", "ab"]
+    levels = [{puzzle:["abcc", "abc", "abcc", "ab"]}, {puzzle:["abcdc", "abc", "abcc", "ab"]}]
+    tool._checkTargetWordsRepeat(puzzle, levels)
 else
     str = """
     ======= tables
