@@ -767,7 +767,11 @@ tool =
         parseCsv(fileName, @getAllSameLevel.bind(@))
 
     printAllChars: ->
-        parseCsv PUZZLE_FILE_PATH, (table) ->
+        if from is "google"
+            fileName = GOOGLE_FILE_LEVEL_OUT
+        else
+            fileName = PUZZLE_FILE_PATH
+        parseCsv fileName, (table) ->
             data = tool._getPuzzleData(table)
             wstream = fs.createWriteStream PUZZLE_FILE_PATH + ".info.csv", { encoding: 'utf8' }
             wstream.write '\ufeff'
