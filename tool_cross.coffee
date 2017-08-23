@@ -510,7 +510,7 @@ tool =
         for name, start of CONFIGS
             titles[start] = name
 
-        wstream = fs.createWriteStream "./output/level.csv"
+        wstream = fs.createWriteStream "./output/level_#{language}.csv"
         wstream.write titles.join(",") + "\n"
         for level, index in levels
             row = []
@@ -619,7 +619,6 @@ tool =
             else
                 cross = genCross(puzzle, ext, size, size)
             if cross
-                console.log("cross ok :#{puzzle}") if cfg.id is 240
                 add = cross.add.length
                 ext = cross.add.concat(cross.ext)
                 return {chars, puzzle, ext, size, add}
