@@ -503,7 +503,7 @@ tool =
             ans     : 6
             ext     : 15
 
-        COLUMES     = 28
+        COLUMES     = 38
 
         titles = []
         titles.length = COLUMES
