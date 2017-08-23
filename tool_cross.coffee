@@ -273,6 +273,7 @@ tool =
                             else
                                 console.log "[WARNING]: #{id} use match from 'more table' and need difficulty:[#{[cfg.difficulty_min, cfg.difficulty_max]}] but use #{matchMore.difficulty}--from file :#{cfg.word_length_max}-1"
                         else
+                            levels.push {}
                             console.log "[error]: #{id} has no match:#{JSON.stringify cfg}"
 
             tool._saveLevels(levels)
@@ -307,6 +308,7 @@ tool =
         isRepeat = false
         for cmpLevel in levels
             cmpPuzzle = cmpLevel.puzzle
+            continue unless cmpPuzzle
             continue if cmpPuzzle.length isnt puzzle.length
             sameCount = 0
             for word in puzzle
@@ -320,34 +322,44 @@ tool =
         return if levels.length is 0
         return true if @_checkTargetWordsRepeat(ret.puzzle, levels)
         curChars = tool.allChars(ret.puzzle)
+        wordsLength = ret.puzzle.length
         letterLength = curChars.length
         minLength = if levels.length >= 100 then levels.length - 100 else 0
         levelIndex = 1
         for index in [levels.length - 1..minLength]
             puzzle = levels[index].puzzle
+            continue unless puzzle
             targetChars = tool.allChars(puzzle)
+            minLetterLength = if letterLength < targetChars.length then letterLength else targetChars.length
             disLetterNum = zim.diffWordLetter(curChars, targetChars).length
             [sameWordsCount, firstLetterSame, disSameWordCount] = @_getTwoWordsInfo(puzzle, ret.puzzle)
+            DEBUG("levelIndex:#{levelIndex}, puzzle:#{puzzle},ret.puzzle:#{ret.puzzle}, #{sameWordsCount} #{firstLetterSame} #{disSameWordCount},minLetterLength:#{minLetterLength} ")
             if 1 <= levelIndex <= 5
                 if sameWordsCount > 1
                     DEBUG("error id 15 - 1")
                     return true
             if 6 <= levelIndex <= 10
-                    if sameWordsCount > 1
-                        DEBUG("error id 14 - 1")
-                        return true
-                    if disSameWordCount < letterLength - 3
-                        DEBUG("error id 14 - 2")
-                        return true
+                if 3 <= letterLength <= 4
+                    if 3 <= wordsLength <= 4
+                        if sameWordsCount > 1
+                            DEBUG("error id 14 - 1")
+                            return true
+                if 5 <= letterLength <= 7
+                    if 5 <= wordsLength <= 7
+                        if sameWordsCount > 1
+                            DEBUG("error id 14 - 2")
+                            return true
             if 11 <= levelIndex <= 20
                 if 3 <= letterLength <= 4
-                    if sameWordsCount > 1
-                        DEBUG("error id 13-1-2")
-                        return true
+                    if 3 <= wordsLength <= 4
+                        if sameWordsCount > 1
+                            DEBUG("error id 13 - 1")
+                            return true
                 if 5 <= letterLength <= 7
-                    if disSameWordCount < letterLength - 3
-                        DEBUG("error id 13-2-2")
-                        return true
+                    if 5 <= wordsLength <= 7
+                        if sameWordsCount > 2
+                            DEBUG("error id 13 - 2")
+                            return true
             if 21 <= levelIndex <= 40
                 switch disLetterNum
                     when 0
@@ -502,6 +514,9 @@ tool =
             row.length = COLUMES
             if level
                 row[CONFIGS.id] = index + 1
+                unless level.difficulty
+                    wstream.write row.join(",") + "\n"
+                    continue
                 row[CONFIGS.difficulty] = level.difficulty
                 row[CONFIGS.success] = if level.success then 1 else 0
                 row[CONFIGS.extCount] = level.add
@@ -580,19 +595,35 @@ tool =
         ext = level.extra.concat(puzzleOrigin, puzzleFrequencyUp)
         ext = tool._filterExtWordWithLength(ext, cfg.word_length_min, cfg.word_length_max)
         chars = tool.allChars(puzzle)
-        if chars.length is cfg.word_length_max or chars.length is cfg.word_length_max + 1
+        if cfg.letter_min <= chars.length <= cfg.letter_max
             size = cfg.word_length_max + 2
             puzzle.sort tool.cmpup
-            cross = genCross(puzzle, ext, size, size)
+            disLength = puzzle.length - cfg.word_num
+            if puzzle.length > cfg.word_num
+                tryCount = puzzle.length - 2 + 1 - disLength
+                for tryIndex in [1..tryCount]
+                    newPuzzle = zim.deepClone(puzzle)
+                    canCross = false
+                    while newPuzzle.length > cfg.word_num
+                        newPuzzle.splice(tryIndex, disLength)
+                        cross = genCross(puzzle, ext, size, size)
+                        if cross
+                            canCross = true
+                            break
+                    if canCross
+                        puzzle = newPuzzle
+                        break
+            else
+                cross = genCross(puzzle, ext, size, size)
             if cross
+                console.log("cross ok :#{puzzle}") if cfg.id is 240
                 add = cross.add.length
                 ext = cross.add.concat(cross.ext)
                 return {chars, puzzle, ext, size, add}
             else
-                #console.log("cross error:#{puzzle}")
                 null
         else
-            console.log("chars length not match")
+            #console.log("chars length not match")
             null
 
     _getHzRatio: (word)->
