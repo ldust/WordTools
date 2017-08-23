@@ -10,12 +10,14 @@ random  = require './ZimConsistentRandom'
 cmd     = argv.c
 mode    = argv.m
 from    = argv.f
+language = argv.l
+language = "en" unless language
 
-LEVEL_RULES_PATH        = "./tables/output_rules.csv"
-RAW_BIG_WORD_LISH_PATH  = "./tables/big.csv"
-RAW_WORD_FILE_PATH      = "./tables/words.csv"
+LEVEL_RULES_PATH        = "./tables/output_rules_#{language}.csv"
+RAW_BIG_WORD_LISH_PATH  = "./tables/big_#{language}.csv"
+RAW_WORD_FILE_PATH      = "./tables/words_#{language}.csv"
 
-PUZZLE_FILE_PATH        = "./output/level.csv"
+PUZZLE_FILE_PATH        = "./output/level_#{language}.csv"
 GOOGLE_FILE_LEVEL_OUT   = "./tables/level_puzzle_out_en.csv"
 
 mode ?= "word"
@@ -217,12 +219,12 @@ tool =
         return
 
     mapWordHZ: (callback)->
-        parseCsv "./config/hz.csv", (table) ->
+        parseCsv "./config/hz_#{language}.csv", (table) ->
             for row, index in table
                 lowerWord = row[0].toLowerCase()
                 Hz[lowerWord] = index
-            tool.hz = JSON.parse fs.readFileSync "./config/hz.json", {encoding: "utf8"}
-            tool.len = JSON.parse fs.readFileSync "./config/len.json", {encoding: "utf8"}
+            tool.hz = JSON.parse fs.readFileSync "./config/hz_#{language}.json", {encoding: "utf8"}
+            tool.len = JSON.parse fs.readFileSync "./config/len_#{language}.json", {encoding: "utf8"}
             callback?()
 
     _controlLevels: (match, levels, cache, id)->

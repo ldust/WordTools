@@ -4,10 +4,21 @@ var async   = require('async');
 var google  = require('googleapis');
 var GoogleSpreadsheet = require("google-spreadsheets");
 
-var spreadsheet = require('./config/table.json');
+var params = process.argv;
+
+var spreadsheet = 0;
+if (params[2] == "en")
+{
+    spreadsheet = require('./config/table.json');
+}
+else if (params[2] = "de")
+{
+    spreadsheet = require('./config/table_de.json');
+}
 var OAuth2Config = require('./config/oauth2.json');
 
-var tableDirection = "./tables"
+var tableDirection = "./tables";
+
 
 if (!fs.existsSync(tableDirection)){
     fs.mkdirSync(tableDirection);

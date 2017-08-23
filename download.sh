@@ -1,3 +1,3 @@
 #!/bin/sh
 npm i
-node gDocBuild.js
+node gDocBuild.js $1
