@@ -595,7 +595,7 @@ tool =
         ext = level.extra.concat(puzzleOrigin, puzzleFrequencyUp)
         ext = tool._filterExtWordWithLength(ext, cfg.word_length_min, cfg.word_length_max)
         chars = tool.allChars(puzzle)
-        if cfg.letter_min <= chars.length <= cfg.letter_max
+        if chars.length is cfg.word_length_max or chars.length is cfg.word_length_max + 1
             size = cfg.word_length_max + 2
             puzzle.sort tool.cmpup
             disLength = puzzle.length - cfg.word_num
@@ -623,7 +623,7 @@ tool =
             else
                 null
         else
-            #console.log("chars length not match")
+            console.log("error chars length not match")
             null
 
     _getHzRatio: (word)->
