@@ -324,6 +324,7 @@ tool =
         curChars = tool.allChars(ret.puzzle)
         wordsLength = ret.puzzle.length
         letterLength = curChars.length
+        maxLetterLength = 8
         minLength = if levels.length >= 100 then levels.length - 100 else 0
         levelIndex = 1
         for index in [levels.length - 1..minLength]
@@ -344,7 +345,7 @@ tool =
                         if sameWordsCount > 1
                             DEBUG("error id 14 - 1")
                             return true
-                if 5 <= letterLength <= 7
+                if 5 <= letterLength <= maxLetterLength
                     if 5 <= wordsLength <= 7
                         if sameWordsCount > 1
                             DEBUG("error id 14 - 2")
@@ -355,7 +356,7 @@ tool =
                         if sameWordsCount > 1
                             DEBUG("error id 13 - 1")
                             return true
-                if 5 <= letterLength <= 7
+                if 5 <= letterLength <= maxLetterLength
                     if 5 <= wordsLength <= 7
                         if sameWordsCount > 2
                             DEBUG("error id 13 - 2")
@@ -367,7 +368,7 @@ tool =
                             if sameWordsCount isnt 0
                                 DEBUG("error id 8-1")
                                 return true
-                        if 5 <= letterLength <= 7
+                        if 5 <= letterLength <= maxLetterLength
                             if disSameWordCount < 3
                                 DEBUG("error id 8-2-1")
                                 return true
@@ -379,7 +380,7 @@ tool =
                             if sameWordsCount > 1
                                 DEBUG("error id 9-1")
                                 return true
-                        if 5 <= letterLength <= 7
+                        if 5 <= letterLength <= maxLetterLength
                             if disSameWordCount < 3
                                 DEBUG("error id 9-2-1")
                                 return true
@@ -392,7 +393,7 @@ tool =
                                 DEBUG("error id 10-1")
                                 return true
 
-                        if 5 <= letterLength <= 7
+                        if 5 <= letterLength <= maxLetterLength
                             if disSameWordCount < 3
                                 DEBUG("error id 10-2")
                                 return true
@@ -404,7 +405,7 @@ tool =
                             if sameWordsCount > 1
                                 DEBUG("error id 5-1")
                                 return true
-                        if 5 <= letterLength <= 7
+                        if 5 <= letterLength <= maxLetterLength
                             if disSameWordCount < 3
                                 DEBUG("error id 5-2-1")
                                 return true
@@ -416,7 +417,7 @@ tool =
                             if disSameWordCount < 2
                                 DEBUG("error id 6-1")
                                 return true
-                        if 5 <= letterLength <= 7
+                        if 5 <= letterLength <= maxLetterLength
                             if disSameWordCount < 3
                                 DEBUG("error id 6-2-1")
                                 return true
@@ -429,7 +430,7 @@ tool =
                         if firstLetterSame > 2
                             DEBUG("error id 3-1-2")
                             return true
-                    if 5 <= letterLength <= 7
+                    if 5 <= letterLength <= maxLetterLength
                         if disSameWordCount < 2
                             DEBUG("error id 3-2-1")
                             return true
