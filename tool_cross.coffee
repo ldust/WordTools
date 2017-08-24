@@ -27,7 +27,7 @@ RAW_BIG_WORD_LISH_PATH  = "./tables/big_#{language}.csv"
 RAW_WORD_FILE_PATH      = "./tables/words_#{language}.csv"
 
 PUZZLE_FILE_PATH        = "./output/level_#{language}.csv"
-GOOGLE_FILE_LEVEL_OUT   = "./tables/level_puzzle_out_en.csv"
+GOOGLE_FILE_LEVEL_OUT   = "./tables/level_puzzle_out_#{language}.csv"
 
 mode ?= "word"
 CHALLENGE_LISH_PATH     = "./tables/challenge_puzzle_#{mode}.json"
@@ -834,7 +834,11 @@ tool =
         return
 
     showRepeat: ->
-        parseCsv PUZZLE_FILE_PATH, (table) ->
+        if from is "google"
+            fileName = GOOGLE_FILE_LEVEL_OUT
+        else
+            fileName = PUZZLE_FILE_PATH
+        parseCsv fileName, (table) ->
             data = tool._getPuzzleData(table)
             puzzleCount = Object.keys(data).length
 
@@ -901,7 +905,11 @@ tool =
                     console.log("#{level}: #{str}")
 
     showRepeatWord: ->
-        parseCsv PUZZLE_FILE_PATH, (table) ->
+        if from is "google"
+            fileName = GOOGLE_FILE_LEVEL_OUT
+        else
+            fileName = PUZZLE_FILE_PATH
+        parseCsv fileName, (table) ->
             data = tool._getPuzzleData(table)
             puzzleCount = Object.keys(data).length
 
@@ -933,7 +941,11 @@ tool =
                             console.log("level:#{level}, nextLevel:#{nextLevel}, repeatWord:#{repeatWord}")
 
     addCrossCount: ->
-        parseCsv PUZZLE_FILE_PATH, (table) ->
+        if from is "google"
+            fileName = GOOGLE_FILE_LEVEL_OUT
+        else
+            fileName = PUZZLE_FILE_PATH
+        parseCsv fileName, (table) ->
             data = tool._getPuzzleData(table)
             wstream = fs.createWriteStream "./output/level_cross_count_#{language}.csv"
             wstream.write ["id", "cross_count"] + "\n"
@@ -1021,6 +1033,10 @@ else
 
     coffee tool_cross.coffee -c add_cross_count -l ??
         输出已经生成好的level文件中单词交叉数,存在output/level_cross_count_??.csv文件中
+
+    注意: 如果要使用google 上面的文件 ,
+        第一步: 将文件放在 /tables/level_puzzle_out_??.csv"
+        第二步: 执行命令时加 -f google
     <=========================================================>
     """
 

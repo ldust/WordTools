@@ -305,6 +305,7 @@ module.exports = genCross = (words, extraWords, w, h) ->
                     h--
                 genPuzzle = new GenPuzzle(w, h)
             else
+                DEBUG("--------------------------------:bn#{result.bn}")
                 return result
         else
             genPuzzle.clear()
