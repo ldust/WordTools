@@ -296,6 +296,7 @@ module.exports = genCross = (words, extraWords, w, h) ->
             DEBUG "==============="
             DEBUG genPuzzle.mapToString()
             result = genPuzzle.getResult()
+            result.bn = genPuzzle.getCrossCount()
             [result.add, result.ext] = genPuzzle.filterExtras(extraWords)
             unless genPuzzle.isConnected
                 if w > h

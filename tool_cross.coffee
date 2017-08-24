@@ -12,6 +12,15 @@ mode    = argv.m
 from    = argv.f
 language = argv.l
 language = "en" unless language
+tipsLanguage = 0
+switch language
+    when "en"
+        tipsLanguage = "英语"
+    when "de"
+        tipsLanguage = "德语"
+    else
+        tipsLanguage = "未知"
+console.log("提示: 正在使用#{tipsLanguage}语言")
 
 LEVEL_RULES_PATH        = "./tables/output_rules_#{language}.csv"
 RAW_BIG_WORD_LISH_PATH  = "./tables/big_#{language}.csv"
@@ -713,11 +722,13 @@ tool =
                 pattern = row[4]
             else
                 pattern = row[5]
+                size = row[4]
             bonus = 0
             newRow.bn = parseInt(bonus) or 0
             newRow.tp = pattern
             newRow.ans = []
             newRow.add = []
+            newRow.size = size
             if from is "google"
                 wordBeginIndex = 5
             else
@@ -921,6 +932,17 @@ tool =
                         if count >= min - 1 and count >= 3
                             console.log("level:#{level}, nextLevel:#{nextLevel}, repeatWord:#{repeatWord}")
 
+    addCrossCount: ->
+        parseCsv PUZZLE_FILE_PATH, (table) ->
+            data = tool._getPuzzleData(table)
+            wstream = fs.createWriteStream "./output/level_cross_count_#{language}.csv"
+            wstream.write ["id", "cross_count"] + "\n"
+
+            for level, puzzle of data
+                puzzle.ans.sort tool.cmpup
+                result = genCross(puzzle.ans, puzzle.add, puzzle.size, puzzle.size)
+                wstream.write [level, result.bn] + "\n"
+            wstream.end()
 if cmd is "run"
     async.series [ 
         tool.prepareLevel, 
@@ -953,41 +975,53 @@ else if cmd is "special"
     tool.showSpecial()
 else if cmd is "find"
     tool.showRepeatWord()
+else if cmd is "add_cross_count"
+    tool.addCrossCount()
 else if cmd is "test"
-    tool.fillExtra()
-#    puzzle = ["abcd", "abc", "abcc", "ab"]
-#    levels = [{puzzle:["abcc", "abc", "abcc", "ab"]}, {puzzle:["abcdc", "abc", "abcc", "ab"]}]
-#    tool._checkTargetWordsRepeat(puzzle, levels)
+    puzzle = ["abcd", "abc", "abcc", "ab"]
+    levels = [{puzzle:["abcc", "abc", "abcc", "ab"]}, {puzzle:["abcdc", "abc", "abcc", "ab"]}]
+    tool._checkTargetWordsRepeat(puzzle, levels)
 else
     str = """
+    <=========================================================>
+    重要提示: 下面的??,用当前语言的简写替换,英语 en,德语 de
     ======= tables
-    === big.csv -> 大词库
-    === words.csv   -> 小词库
-    === output_rules.csv      -> 关卡规则
-    === hz.csv                -> 词频表
+    === big_??.csv -> 大词库
+    === words_??.csv   -> 小词库
+    === output_rules_??.csv      -> 关卡规则
+    === hz_??.csv                -> 词频表
 
     ======= config
-    === hz.json               -> 词频难度配置
-    === len.json              -> 词长难度配置
+    === hz_??.json               -> 词频难度配置
+    === len_??.json              -> 词长难度配置
 
     ======= output
-    === level.json            -> json 格式关卡
-    === level.csv             -> csv 格式关卡
+    === level_??.json            -> json 格式关卡
+    === level_??.csv             -> csv 格式关卡
 
-    coffee tool_cross.coffee -c run
+    导表: ./download.sh ??
+
+    coffee tool_cross.coffee -c run -l ??
         整体执行生成关卡的逻辑
 
-    coffee tool_cross.coffee -c prepare
+    coffee tool_cross.coffee -c prepare -l ??
         预处理关卡，当大、小词库变化时需要运行
 
-    coffee tool_cross.coffee -c level
+    coffee tool_cross.coffee -c level -l ??
         随机关卡，当配置变化时需要运行
 
-    coffee tool_cross.coffee -c repeat
+    coffee tool_cross.coffee -c repeat -l ??
         显示n关内完全相同的单词
 
-    coffee tool_cross.coffee -c find
+    coffee tool_cross.coffee -c find -l ??
         显示关卡间重复单词数大于等于3的行数和单词
 
+    coffee tool_cross.coffee -c info -l ??
+        使用关卡文件level_puzzle_out.csv，检测文件中重复的关卡，输出信息中每行代表同一组重复关卡号，同时输出每关用的字母
+
+    coffee tool_cross.coffee -c add_cross_count -l ??
+        输出已经生成好的level文件中单词交叉数,存在output/level_cross_count_??.csv文件中
+    <=========================================================>
     """
+
     console.log str
