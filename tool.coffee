@@ -7,13 +7,16 @@ _       = require 'lodash'
 cmd     = argv.c
 mode    = argv.m
 
+mode ?= "word"
+
 WORD_FILE_PATH          = "./tables/level_words.csv"
 PUZZLE_FILE_PATH        = "./tables/level_puzzle_out.csv"
-BIG_WORD_LISH_PATH      = "./tables/big_word_list.csv"
+BIG_WORD_LISH_PATH      = "./tables/big_word_list_#{mode}.csv"
 RAW_BIG_WORD_LISH_PATH  = "./tables/raw_big_word_list.csv"
 RAW_WORD_FILE_PATH      = "./tables/raw_level_words.csv"
+EXCHANGE_LISH_PATH      = "./tables/exchange_#{mode}.csv"
 
-mode ?= "word"
+
 CHALLENGE_LISH_PATH     = "./tables/challenge_puzzle_#{mode}.json"
 
 ChallengeTool           = require "./gen_challenge"
@@ -179,6 +182,9 @@ tool =
 
     genDict: ()->
         parseCsv(BIG_WORD_LISH_PATH, ChallengeTool.genWordListBySize(CHALLENGE_LISH_PATH))
+
+    genDictWithFilter: ()->
+        parseCsv(EXCHANGE_LISH_PATH, ChallengeTool.getWordInExchangeList(tool.genDict))
 
     allChars: (words) ->
         charMaps = []
@@ -437,6 +443,10 @@ else if cmd is "lab"
     tool.lab()
 else if cmd is "gen_challenge"
     tool.genDict()
+else if cmd is "easy_gen_challenge"
+    ChallengeTool.easyGenChallengePuzzle(CHALLENGE_LISH_PATH)
+else if cmd is "gen_challenge_filter"
+    tool.genDictWithFilter()
 else
     str = """
     raw_big_word_list.csv -> 大词库
