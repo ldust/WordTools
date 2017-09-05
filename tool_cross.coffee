@@ -663,6 +663,7 @@ tool =
             else
                 obj = {}
                 for cell, j in row
+                    continue if cell is ""
                     key = keys[j]
                     if key is "name"
                         obj[key] = cell
@@ -989,10 +990,15 @@ else if cmd is "find"
     tool.showRepeatWord()
 else if cmd is "add_cross_count"
     tool.addCrossCount()
-else if cmd is "test"
-    puzzle = ["abcd", "abc", "abcc", "ab"]
-    levels = [{puzzle:["abcc", "abc", "abcc", "ab"]}, {puzzle:["abcdc", "abc", "abcc", "ab"]}]
-    tool._checkTargetWordsRepeat(puzzle, levels)
+else if cmd is "tool_json"
+    parseCsv "tables/word_difficult.csv", (table) ->
+        config = tool._parseConfig(table)
+        fs.writeFileSync "./config/word_difficult.json", JSON.stringify config
+
+    parseCsv "tables/structure_detect.csv", (table) ->
+        config = tool._parseConfig(table)
+        fs.writeFileSync "./config/structure_detect.json", JSON.stringify config
+    console.log("JSON转换完成!")
 else
     str = """
     <=========================================================>

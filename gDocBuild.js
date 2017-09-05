@@ -11,9 +11,13 @@ if (params[2] == "en")
 {
     spreadsheet = require('./config/table.json');
 }
-else if (params[2] = "de")
+else if (params[2] == "de")
 {
     spreadsheet = require('./config/table_de.json');
+}
+else if (params[2] == "tool")
+{
+    spreadsheet = require('./config/table_tool.json')
 }
 var OAuth2Config = require('./config/oauth2.json');
 
