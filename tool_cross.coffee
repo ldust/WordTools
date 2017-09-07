@@ -291,7 +291,7 @@ tool =
                             else
                                 console.log "[WARNING]: #{id} use match from 'more table' and need difficulty:[#{[cfg.difficulty_min, cfg.difficulty_max]}] but use #{matchMore.difficulty}--from file :#{cfg.word_length_max}-1"
                         else
-                            levels.push {}
+                            levels.push {levelId: id}
                             console.log "[error]: #{id} has no match"
             tool._saveLevels(levels)
             tool._saveBackUpLevels()
@@ -942,6 +942,7 @@ tool =
                 else if index - wordBeginIndex >= pattern.length
                     newRow.add.push @_toUpperCase(item)
             newRow.ans.sort(@cmpRepeat)
+            continue if newRow.ans.length is 0
             for item, index in newRow.ans
                 if item.length isnt parseInt(pattern[index])
                     console.log("newRow:#{JSON.stringify newRow}, column:#{column}")
@@ -1182,10 +1183,6 @@ else if cmd is "info"
     tool.printAllChars()
 else if cmd is "repeat"
     tool.showRepeat()
-else if cmd is "special"
-    tool.showSpecial()
-else if cmd is "find"
-    tool.showRepeatWord()
 else if cmd is "add_cross_count"
     tool.addCrossCount()
 else if cmd is "tool_json"
@@ -1233,9 +1230,6 @@ else
 
     coffee tool_cross.coffee -c repeat -l ??
         显示n关内完全相同的单词
-
-    coffee tool_cross.coffee -c find -l ??
-        显示关卡间重复单词数大于等于3的行数和单词
 
     coffee tool_cross.coffee -c info -l ??
         使用关卡文件level_puzzle_out.csv，检测文件中重复的关卡，输出信息中每行代表同一组重复关卡号，同时输出每关用的字母
