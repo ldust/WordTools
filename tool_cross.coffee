@@ -54,6 +54,7 @@ else
 
 parseCsv = (path, callback)->
     data = fs.readFileSync path, {encoding: "utf8"}
+    console.log(path)
     parse data, {delimiter: ','}, (error, table)->
         throw new Error(error) if error?
         callback(table)
@@ -658,7 +659,7 @@ tool =
             ans     : 6
             ext     : 15
 
-        COLUMES     = 38
+        COLUMES     = 50
 
         titles = []
         titles.length = COLUMES
@@ -707,7 +708,7 @@ tool =
             ans     : 6
             ext     : 15
 
-        COLUMES     = 38
+        COLUMES     = 50
 
         titles = []
         titles.length = COLUMES
