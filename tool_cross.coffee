@@ -10,6 +10,7 @@ random  = require './ZimConsistentRandom'
 cmd     = argv.c
 mode    = argv.m
 from    = argv.f
+timeBegin = 0
 language = argv.l
 language = "en" unless language
 tipsLanguage = 0
@@ -36,6 +37,9 @@ ChallengeTool           = require "./gen_challenge"
 
 Dict                    = {}
 Hz                      = {}
+
+breakRules              = []
+
 PATTERN_INDEX           = 3
 ANS_START_INDEX         = 4
 EXTRA_START_INDEX       = 100
@@ -229,11 +233,12 @@ tool =
 
     mapWordHZ: (callback)->
         parseCsv "./config/hz_#{language}.csv", (table) ->
+            timeBegin = new Date()
             for row, index in table
                 lowerWord = row[0].toLowerCase()
                 Hz[lowerWord] = index
             tool.hz = JSON.parse fs.readFileSync "./config/hz_#{language}.json", {encoding: "utf8"}
-            tool.len = JSON.parse fs.readFileSync "./config/len_#{language}.json", {encoding: "utf8"}
+            tool.len = JSON.parse fs.readFileSync "./config/word_difficult.json", {encoding: "utf8"}
             callback?()
 
     _controlLevels: (match, levels, cache, id)->
@@ -269,7 +274,7 @@ tool =
                     cache = cabdidateCache["#{cfg.word_length_max}-0"]
                     match = tool._getMatchFromCache(cache, cfg, true, levels)
                     if match
-                        levels.push match.ret
+                        levels.push match
                         cache.splice match.index, 1
                         unless match.success
                             console.log "[WARNING]: #{id} need difficulty:[#{[cfg.difficulty_min, cfg.difficulty_max]}] but use #{match.difficulty}--from file :#{cfg.word_length_max}-0"
@@ -277,7 +282,7 @@ tool =
                         cacheMore = cabdidateCache["#{cfg.word_length_max}-1"]
                         matchMore = tool._getMatchFromCache(cacheMore, cfg, true, levels)
                         if matchMore
-                            levels.push matchMore.ret
+                            levels.push matchMore
                             cacheMore.splice matchMore.index, 1
                             if matchMore.success
                                 console.log "[WARNING]: #{id} use match from 'more table'--from file :#{cfg.word_length_max}-1"
@@ -285,9 +290,11 @@ tool =
                                 console.log "[WARNING]: #{id} use match from 'more table' and need difficulty:[#{[cfg.difficulty_min, cfg.difficulty_max]}] but use #{matchMore.difficulty}--from file :#{cfg.word_length_max}-1"
                         else
                             levels.push {}
-                            console.log "[error]: #{id} has no match:#{JSON.stringify cfg}"
-
+                            # console.log "[error]: #{id} has no match:#{JSON.stringify cfg}"
             tool._saveLevels(levels)
+            tool._saveBreakRulesLevel()
+            nowTime = new Date()
+            console.log("cost time:#{(nowTime - timeBegin) / 1000}")
             callback?()
             return
 
@@ -329,8 +336,18 @@ tool =
                 isRepeat = true
         return isRepeat
 
-    _checkRepeatOnCreate: (ret, levels)->
-        return if levels.length is 0
+    _saveBreakLevelInfo: (level, ruleId, levelId, currentLevels)->
+        for currentLevel in currentLevels
+            if currentLevel.index is level.index
+                return
+        level.breakSameRuleId = ruleId
+        level.levelId = levelId
+        currentLevels.push level
+
+    _checkRepeatOnCreate: (ret, levels, levelId, currentLevels)->
+        if levels.length is 0
+            @_saveBreakLevelInfo(ret, -1, levelId, currentLevels)
+            return
         return true if @_checkTargetWordsRepeat(ret.puzzle, levels)
         curChars = tool.allChars(ret.puzzle)
         wordsLength = ret.puzzle.length
@@ -349,28 +366,33 @@ tool =
             if 1 <= levelIndex <= 5
                 if sameWordsCount > 1
                     DEBUG("error id 15 - 1")
+                    @_saveBreakLevelInfo(ret, 15, levelId, currentLevels)
                     return true
             if 6 <= levelIndex <= 10
                 if 3 <= letterLength <= 4
                     if 3 <= wordsLength <= 4
                         if sameWordsCount > 1
                             DEBUG("error id 14 - 1")
+                            @_saveBreakLevelInfo(ret, 14, levelId, currentLevels)
                             return true
                 if 5 <= letterLength <= maxLetterLength
                     if 5 <= wordsLength <= 7
                         if sameWordsCount > 1
                             DEBUG("error id 14 - 2")
+                            @_saveBreakLevelInfo(ret, 14, levelId, currentLevels)
                             return true
             if 11 <= levelIndex <= 20
                 if 3 <= letterLength <= 4
                     if 3 <= wordsLength <= 4
                         if sameWordsCount > 1
                             DEBUG("error id 13 - 1")
+                            @_saveBreakLevelInfo(ret, 13, levelId, currentLevels)
                             return true
                 if 5 <= letterLength <= maxLetterLength
                     if 5 <= wordsLength <= 7
                         if sameWordsCount > 2
                             DEBUG("error id 13 - 2")
+                            @_saveBreakLevelInfo(ret, 13, levelId, currentLevels)
                             return true
             if 21 <= levelIndex <= 40
                 switch disLetterNum
@@ -378,35 +400,43 @@ tool =
                         if 3 <= letterLength <= 4
                             if sameWordsCount isnt 0
                                 DEBUG("error id 8-1")
+                                @_saveBreakLevelInfo(ret, 8, levelId, currentLevels)
                                 return true
                         if 5 <= letterLength <= maxLetterLength
                             if disSameWordCount < 3
                                 DEBUG("error id 8-2-1")
+                                @_saveBreakLevelInfo(ret, 8, levelId, currentLevels)
                                 return true
                             if firstLetterSame > 2
                                 DEBUG("error id 8-2-2")
+                                @_saveBreakLevelInfo(ret, 8, levelId, currentLevels)
                                 return true
                     when 1
                         if 3 <= letterLength <= 4
                             if sameWordsCount > 1
                                 DEBUG("error id 9-1")
+                                @_saveBreakLevelInfo(ret, 9, levelId, currentLevels)
                                 return true
                         if 5 <= letterLength <= maxLetterLength
                             if disSameWordCount < 3
                                 DEBUG("error id 9-2-1")
+                                @_saveBreakLevelInfo(ret, 9, levelId, currentLevels)
                                 return true
                             if firstLetterSame > 2
                                 DEBUG("error id 9-2-1")
+                                @_saveBreakLevelInfo(ret, 9, levelId, currentLevels)
                                 return true
                     when 2
                         if 3 <= letterLength <= 4
                             if disSameWordCount < 2
                                 DEBUG("error id 10-1")
+                                @_saveBreakLevelInfo(ret, 10, levelId, currentLevels)
                                 return true
 
                         if 5 <= letterLength <= maxLetterLength
                             if disSameWordCount < 3
                                 DEBUG("error id 10-2")
+                                @_saveBreakLevelInfo(ret, 10, levelId, currentLevels)
                                 return true
 
             if 41 <= levelIndex <= 60
@@ -415,56 +445,150 @@ tool =
                         if 3 <= letterLength <= 4
                             if sameWordsCount > 1
                                 DEBUG("error id 5-1")
+                                @_saveBreakLevelInfo(ret, 5, levelId, currentLevels)
                                 return true
                         if 5 <= letterLength <= maxLetterLength
                             if disSameWordCount < 3
                                 DEBUG("error id 5-2-1")
+                                @_saveBreakLevelInfo(ret, 5, levelId, currentLevels)
                                 return true
                             if firstLetterSame > 3
                                 DEBUG("error id 5-2-1")
+                                @_saveBreakLevelInfo(ret, 5, levelId, currentLevels)
                                 return true
                     when 1
                         if 3 <= letterLength <= 4
                             if disSameWordCount < 2
                                 DEBUG("error id 6-1")
+                                @_saveBreakLevelInfo(ret, 6, levelId, currentLevels)
                                 return true
                         if 5 <= letterLength <= maxLetterLength
                             if disSameWordCount < 3
                                 DEBUG("error id 6-2-1")
+                                @_saveBreakLevelInfo(ret, 6, levelId, currentLevels)
                                 return true
             if 61 <= levelIndex <= 80
                 if disLetterNum <= 1
                     if 3 <= letterLength <= 4
                         if disSameWordCount < 2
                             DEBUG("error id 3-1-1")
+                            @_saveBreakLevelInfo(ret, 3, levelId, currentLevels)
                             return true
                         if firstLetterSame > 2
                             DEBUG("error id 3-1-2")
+                            @_saveBreakLevelInfo(ret, 3, levelId, currentLevels)
                             return true
                     if 5 <= letterLength <= maxLetterLength
                         if disSameWordCount < 2
                             DEBUG("error id 3-2-1")
+                            @_saveBreakLevelInfo(ret, 3, levelId, currentLevels)
                             return true
                         if firstLetterSame > 4
                             DEBUG("error id 3-2-2")
+                            @_saveBreakLevelInfo(ret, 3, levelId, currentLevels)
                             return true
             if 81 <= levelIndex <= 100
                 if disLetterNum is 0
                     if disSameWordCount < 2
                         DEBUG("error id 1")
+                        @_saveBreakLevelInfo(ret, 1, levelId, currentLevels)
                         return true
 
             levelIndex++
-
+        @_saveBreakLevelInfo(ret, -1, levelId, currentLevels)
         return false
+
+    _getSameLengthWord: (level1, level2)->
+        cmpWord = []
+        sameWordLength = 0
+        for word1 in level1
+            continue if word1 in cmpWord
+            for word2 in level2
+                continue if word2 in cmpWord
+                if word1.length is word2.length
+                    cmpWord.push word1
+                    cmpWord.push word2
+                    sameWordLength++
+        return sameWordLength
+
+    _saveBreakLevelWithStructureInfo: (level, ruleId, currentLevels)->
+        level.breakStructureId = ruleId
+        currentLevels.push level
+
+    _dealLevel: (disCount, currentPuzzleLength, sameLengthWord, limit1, limit2, limit3, limit4, rulesId1, rulesId2)->
+        switch disCount
+            when 0
+                if 2 <= currentPuzzleLength <= 4
+                    if sameLengthWord > limit1
+                        DEBUG "error structure id #{rulesId1} - 1"
+                        return rulesId1
+                if 5 <= currentPuzzleLength <= 8
+                    if sameLengthWord > limit2
+                        DEBUG "error structure id #{rulesId1} - 2"
+                        return rulesId1
+            when 1
+                if 2 <= currentPuzzleLength <= 4
+                    if sameLengthWord > limit3
+                        DEBUG "error structure id #{rulesId2} - 1"
+                        return rulesId2
+                if 5 <= currentPuzzleLength <= 8
+                    if sameLengthWord > limit4
+                        DEBUG "error structure id #{rulesId2} - 2"
+                        return rulesId2
+        return -1
+
+    _checkStructureOnCreate: (currentLevels, levels)->
+        niceLevels = []
+        isNullTable = true
+        for level in levels
+            for obj of level
+                isNullTable = false
+                break
+            break unless isNullTable
+        return currentLevels if isNullTable
+        minLength = if levels.length >= 10 then levels.length - 10 else 0
+        for currentLevel in currentLevels
+            currentPuzzle = currentLevel.puzzle
+            currentPuzzleLength = currentPuzzle.length
+            levelIndex = 1
+            isEnd = true
+            for index in [levels.length - 1..minLength]
+                targetPuzzle = levels[index].puzzle
+                unless targetPuzzle?
+                    levelIndex++
+                    continue
+                targetPuzzleLength = targetPuzzle.length
+                disCount = Math.abs(currentPuzzleLength - targetPuzzleLength)
+                sameLengthWord = @_getSameLengthWord(currentPuzzle, targetPuzzle)
+                if 1 <= levelIndex <= 2
+                    resultId = @_dealLevel(disCount, currentPuzzleLength, sameLengthWord, 2, 4, 3, 5, 9, 8)
+                    if resultId isnt -1
+                        @_saveBreakLevelWithStructureInfo(currentLevel, resultId, niceLevels)
+                        isEnd = false
+                        break
+                else if 3 <= levelIndex <= 5
+                    resultId = @_dealLevel(disCount, currentPuzzleLength, sameLengthWord, 2, 4, 4, 6, 6, 5)
+                    if resultId isnt -1
+                        @_saveBreakLevelWithStructureInfo(currentLevel, resultId, niceLevels)
+                        isEnd = false
+                        break
+                else if 6 <= levelIndex <= 10
+                    resultId = @_dealLevel(disCount, currentPuzzleLength, sameLengthWord, 3, 5, 4, 6, 3, 2)
+                    if resultId isnt -1
+                        @_saveBreakLevelWithStructureInfo(currentLevel, resultId, niceLevels)
+                        isEnd = false
+                        break
+                levelIndex++
+            @_saveBreakLevelWithStructureInfo(currentLevel, -1, niceLevels) if isEnd
+        niceLevels
 
     _getMatchFromCache: (cache, cfg, useNonCon, levels)->
         randFun = random(100).random
-        match = null
         indexTryed = []
+        currentLevels = []
         for i in [0 ... cache.length]
-            if i isnt 0 and i %1000 is 0
-                console.log("try count:#{i} --------------->total:#{cache.length}")
+#            if i isnt 0 and i %1000 is 0
+#                console.log("try count:#{i} --------------->total:#{cache.length}")
             index = Math.floor(randFun() * cache.length)
             tryCount = 0
             while index in indexTryed and tryCount < 100
@@ -474,25 +598,77 @@ tool =
             puzzle = cache[index]
             ret = tool._createLevelByCfg(puzzle, cfg, useNonCon)
             if ret
-                isHaveSameLevel = @_checkRepeatOnCreate(ret, levels)
-                continue if isHaveSameLevel
                 difficulty = Math.floor(tool._calcDifficulty(ret.puzzle))
-                ret.difficulty = difficulty
+                #console.log(cfg.difficulty_min, difficulty, cfg.difficulty_max)
                 if cfg.difficulty_min <= difficulty <= cfg.difficulty_max
-                    match = {ret, index, difficulty, success: true}
-                    break
-                else
-                    if match
-                        if Math.abs(difficulty - cfg.difficulty_min) < Math.abs(match.difficulty - cfg.difficulty_min)
-                            match = {ret, index, difficulty, success: false}
-                    else
-                        match = {ret, index, difficulty, success: false}
-        if match
-            match.ret.success = match.success
-            match.ret.id = cfg.id
-            return match
-        else
-            null
+                    ret.index  = index
+                    ret.difficulty = difficulty
+                    ret.success = true
+                    @_checkRepeatOnCreate(ret, levels, cfg.id, currentLevels)
+        if currentLevels.length is 0
+            console.log("ERROR: level:#{cfg.id} difficult not match")
+        niceLevels = @_checkStructureOnCreate(currentLevels, levels)
+        breakRules.push niceLevels
+        goodLevel = undefined
+        minNum = 100
+        goodIndex = 0
+        for level, index in niceLevels
+            level.breakStructureId ?= -1
+            if level.breakSameRuleId >= level.breakStructureId
+                if level.breakSameRuleId <= minNum
+                    minNum = level.breakSameRuleId
+                    goodLevel = level
+                    goodIndex = index
+            else
+                if level.breakStructureId <= minNum
+                    minNum = level.breakStructureId
+                    goodLevel = level
+                    goodIndex = index
+        #niceLevels.splice(goodIndex, 1)
+
+        return goodLevel
+
+    _saveBreakRulesLevel: ->
+        CONFIGS =
+            id      : 0
+            breakId1 : 1
+            breakId2 : 2
+            difficulty: 3
+            extCount: 4
+            type    : 5
+            ans     : 6
+            ext     : 15
+
+        COLUMES     = 38
+
+        titles = []
+        titles.length = COLUMES
+        for name, start of CONFIGS
+            titles[start] = name
+
+        wstream = fs.createWriteStream "./output/level_#{language}_backup.csv"
+        wstream.write titles.join(",") + "\n"
+        count = 1
+        for table in breakRules
+            for level in table
+                row = []
+                row.length = COLUMES
+                count++
+
+                if level
+                    row[CONFIGS.id] = level.levelId
+                    row[CONFIGS.breakId1] = level.breakSameRuleId
+                    row[CONFIGS.breakId2] = level.breakStructureId
+                    row[CONFIGS.difficulty] = level.difficulty
+                    row[CONFIGS.extCount] = level.add
+                    row[CONFIGS.type] = (level.puzzle.map (word)-> word.length + '').join('')
+                    for ans, ansI in level.puzzle
+                        row[CONFIGS.ans + ansI] = ans
+                    for ext, extI in level.ext
+                        row[CONFIGS.ext + extI] = ext
+                wstream.write row.join(",") + "\n"
+        console.log("*** backup count :#{count}")
+        wstream.end()
 
     _saveLevels: (levels)->
         outputPath = "./output"
@@ -504,10 +680,10 @@ tool =
         #====
         CONFIGS = 
             id      : 0
-            difficulty : 1
-            success : 2
-            extCount: 3
-            size    : 4
+            breakId1:1
+            breakId2:2
+            difficulty : 3
+            extCount: 4
             type    : 5
             ans     : 6
             ext     : 15
@@ -521,24 +697,28 @@ tool =
 
         wstream = fs.createWriteStream "./output/level_#{language}.csv"
         wstream.write titles.join(",") + "\n"
+        count = 1
         for level, index in levels
             row = []
             row.length = COLUMES
             if level
-                row[CONFIGS.id] = index + 1
+                row[CONFIGS.id] = level.levelId
                 unless level.difficulty
                     wstream.write row.join(",") + "\n"
                     continue
+                count++
                 row[CONFIGS.difficulty] = level.difficulty
                 row[CONFIGS.success] = if level.success then 1 else 0
                 row[CONFIGS.extCount] = level.add
-                row[CONFIGS.size] = level.size
+                row[CONFIGS.breakId1] = level.breakSameRuleId
+                row[CONFIGS.breakId2] = level.breakStructureId
                 row[CONFIGS.type] = (level.puzzle.map (word)-> word.length + '').join('')
                 for ans, ansI in level.puzzle
                     row[CONFIGS.ans + ansI] = ans
                 for ext, extI in level.ext
                     row[CONFIGS.ext + extI] = ext
             wstream.write row.join(",") + "\n"
+        console.log("*** ok count :#{count}")
         wstream.end()
 
     _filterExtWordWithLength: (ext, min, max)->
@@ -608,31 +788,14 @@ tool =
         ext = tool._filterExtWordWithLength(ext, cfg.word_length_min, cfg.word_length_max)
         chars = tool.allChars(puzzle)
         if chars.length is cfg.word_length_max or chars.length is cfg.word_length_max + 1
-            size = cfg.word_length_max + 2
             puzzle.sort tool.cmpup
             disLength = puzzle.length - cfg.word_num
             if puzzle.length > cfg.word_num
-                tryCount = puzzle.length - 2 + 1 - disLength
-                for tryIndex in [1..tryCount]
-                    newPuzzle = zim.deepClone(puzzle)
-                    canCross = false
-                    while newPuzzle.length > cfg.word_num
-                        newPuzzle.splice(tryIndex, disLength)
-                        cross = genCross(puzzle, ext, size, size)
-                        if cross
-                            canCross = true
-                            break
-                    if canCross
-                        puzzle = newPuzzle
-                        break
-            else
-                cross = genCross(puzzle, ext, size, size)
-            if cross
-                add = cross.add.length
-                ext = cross.add.concat(cross.ext)
-                return {chars, puzzle, ext, size, add}
-            else
-                null
+                newPuzzle = zim.deepClone(puzzle)
+                newPuzzle.splice(1, disLength)
+                puzzle = newPuzzle
+            add = ext.length
+            return {chars, puzzle, ext, add}
         else
             console.log("error chars length not match")
             null
@@ -645,10 +808,26 @@ tool =
                 targetRatio = item[1]
         return targetRatio
 
+    _getLenDifficulty: (charsLength, word)->
+        targetObj = undefined
+        for own id, content of tool.len
+            if content.target_letter is word.length
+                targetObj = content
+        unless targetObj
+            console.log("ERROR, char len not match")
+            return 0
+        allCharLengthStr = "ratio#{charsLength}"
+        for own key, value of targetObj
+            if key is allCharLengthStr
+                return value
+        console.log("ERROR, word len not match")
+        return 0
+
     _calcDifficulty: (words)->
         score = 0
+        allCharsLength = @allChars(words).length
         for w in words
-            score += tool._getHzRatio(w) * tool.len[w.length]
+            score += tool._getHzRatio(w) * @_getLenDifficulty(allCharsLength, w)
         score
 
     _parseConfig: (table)->
@@ -975,7 +1154,7 @@ else if cmd is "prepare"
         tool.fillExtra
     ], (error, result)->
 else if cmd is "level"
-    async.series [ 
+    async.series [
         tool.mapWordHZ,
         tool.createLevels
     ], (error, result)->
@@ -992,13 +1171,18 @@ else if cmd is "add_cross_count"
     tool.addCrossCount()
 else if cmd is "tool_json"
     parseCsv "tables/word_difficult.csv", (table) ->
-        config = tool._parseConfig(table)
+        config = tool._parseConfig(table, true)
         fs.writeFileSync "./config/word_difficult.json", JSON.stringify config
 
     parseCsv "tables/structure_detect.csv", (table) ->
         config = tool._parseConfig(table)
         fs.writeFileSync "./config/structure_detect.json", JSON.stringify config
     console.log("JSON转换完成!")
+
+else if cmd is "test"
+    puzzle1 = ["abcd", "abcc", "abc", "ab", "ab", "aa"]
+    puzzle2 = ["abdc", "adb", "ac", "ad"]
+    tool._getSameLengthWord(puzzle1, puzzle2)
 else
     str = """
     <=========================================================>
