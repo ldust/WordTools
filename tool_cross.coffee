@@ -296,7 +296,7 @@ tool =
             tool._saveLevels(levels)
             tool._saveBackUpLevels()
             nowTime = new Date()
-            console.log("cost time:#{(nowTime - timeBegin) / 1000}")
+            console.log("<------------------cost time: #{(nowTime - timeBegin) / 1000}------------------>")
             callback?()
             return
 
@@ -499,7 +499,8 @@ tool =
             levelIndex++
         @_saveBreakLevelInfo(ret, -1, levelId, currentLevels)
         return false
-
+    # puzzle1 = [ 'hose', 'hove', 'shoe', 'shove' ]
+    # puzzle2 = [ 'cane', 'cone', 'once', 'canoe', 'ocean', 'ounce' ]
     _getSameLengthWord: (level1, level2)->
         cmpWord = []
         sameWordLength = 0
@@ -507,6 +508,7 @@ tool =
             continue if word1 in cmpWord
             for word2 in level2
                 continue if word2 in cmpWord
+                continue if word1 in cmpWord
                 if word1.length is word2.length
                     cmpWord.push word1
                     cmpWord.push word2
@@ -562,6 +564,9 @@ tool =
                 targetPuzzleLength = targetPuzzle.length
                 disCount = Math.abs(currentPuzzleLength - targetPuzzleLength)
                 sameLengthWord = @_getSameLengthWord(currentPuzzle, targetPuzzle)
+                if disCount is 0 and targetPuzzleLength is sameLengthWord and levelIndex is 1
+                    isEnd = false
+                    break
                 if 1 <= levelIndex <= 2
                     resultId = @_dealLevel(disCount, currentPuzzleLength, sameLengthWord, 2, 4, 3, 5, 9, 8)
                     if resultId isnt -1
@@ -681,7 +686,7 @@ tool =
                     for ext, extI in level.ext
                         row[CONFIGS.ext + extI] = ext
                 wstream.write row.join(",") + "\n"
-        console.log("*** backup count :#{count}")
+        console.log("<------------------backup count: #{count}------------------>")
         wstream.end()
 
     _saveLevels: (levels)->
@@ -732,7 +737,7 @@ tool =
                 for ext, extI in level.ext
                     row[CONFIGS.ext + extI] = ext
             wstream.write row.join(",") + "\n"
-        console.log("*** ok count :#{count}")
+        console.log("<------------------ok count: #{count}------------------>")
         wstream.end()
 
     _filterExtWordWithLength: (ext, min, max)->
@@ -1194,8 +1199,8 @@ else if cmd is "tool_json"
     console.log("JSON转换完成!")
 
 else if cmd is "test"
-    puzzle1 = ["abcd", "abcc", "abc", "ab", "ab", "aa"]
-    puzzle2 = ["abdc", "adb", "ac", "ad"]
+    puzzle1 = [ 'hose', 'hove', 'shoe', 'shove' ]
+    puzzle2 = [ 'cane', 'cone', 'once', 'canoe', 'ocean', 'ounce' ]
     tool._getSameLengthWord(puzzle1, puzzle2)
 else
     str = """
