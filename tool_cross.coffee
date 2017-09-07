@@ -38,7 +38,7 @@ ChallengeTool           = require "./gen_challenge"
 Dict                    = {}
 Hz                      = {}
 
-breakRules              = []
+backUpLevels              = []
 
 PATTERN_INDEX           = 3
 ANS_START_INDEX         = 4
@@ -272,7 +272,8 @@ tool =
                     console.log "[Error]: #{id}: letter_max(#{cfg.letter_max}) can't smaller than cfg.word_length_max(#{cfg.word_length_max})"
                 else
                     cache = cabdidateCache["#{cfg.word_length_max}-0"]
-                    match = tool._getMatchFromCache(cache, cfg, true, levels)
+                    levelInfo = "#{cfg.word_length_max}-0"
+                    match = tool._getMatchFromCache(cache, cfg, true, levels, levelInfo)
                     if match
                         levels.push match
                         cache.splice match.index, 1
@@ -280,7 +281,8 @@ tool =
                             console.log "[WARNING]: #{id} need difficulty:[#{[cfg.difficulty_min, cfg.difficulty_max]}] but use #{match.difficulty}--from file :#{cfg.word_length_max}-0"
                     else
                         cacheMore = cabdidateCache["#{cfg.word_length_max}-1"]
-                        matchMore = tool._getMatchFromCache(cacheMore, cfg, true, levels)
+                        levelInfo = "#{cfg.word_length_max}-1"
+                        matchMore = tool._getMatchFromCache(cacheMore, cfg, true, levels, levelInfo)
                         if matchMore
                             levels.push matchMore
                             cacheMore.splice matchMore.index, 1
@@ -290,9 +292,9 @@ tool =
                                 console.log "[WARNING]: #{id} use match from 'more table' and need difficulty:[#{[cfg.difficulty_min, cfg.difficulty_max]}] but use #{matchMore.difficulty}--from file :#{cfg.word_length_max}-1"
                         else
                             levels.push {}
-                            # console.log "[error]: #{id} has no match:#{JSON.stringify cfg}"
+                            console.log "[error]: #{id} has no match"
             tool._saveLevels(levels)
-            tool._saveBreakRulesLevel()
+            tool._saveBackUpLevels()
             nowTime = new Date()
             console.log("cost time:#{(nowTime - timeBegin) / 1000}")
             callback?()
@@ -336,13 +338,13 @@ tool =
                 isRepeat = true
         return isRepeat
 
-    _saveBreakLevelInfo: (level, ruleId, levelId, currentLevels)->
+    _saveBreakLevelInfo: (goodLevel, ruleId, levelId, currentLevels)->
         for currentLevel in currentLevels
-            if currentLevel.index is level.index
+            if currentLevel.levelInfo is goodLevel.levelInfo
                 return
-        level.breakSameRuleId = ruleId
-        level.levelId = levelId
-        currentLevels.push level
+        goodLevel.breakSameRuleId = ruleId
+        goodLevel.levelId = levelId
+        currentLevels.push goodLevel
 
     _checkRepeatOnCreate: (ret, levels, levelId, currentLevels)->
         if levels.length is 0
@@ -582,7 +584,16 @@ tool =
             @_saveBreakLevelWithStructureInfo(currentLevel, -1, niceLevels) if isEnd
         niceLevels
 
-    _getMatchFromCache: (cache, cfg, useNonCon, levels)->
+    _delLevelFromBackUp: (niceLevels)->
+        for niceLevel in niceLevels
+            for levels in backUpLevels
+                for level, index in levels
+                    if level.levelInfo is niceLevel.levelInfo
+                        levels.splice(index, 1)
+                        break
+        return
+
+    _getMatchFromCache: (cache, cfg, useNonCon, levels, levelInfo)->
         randFun = random(100).random
         indexTryed = []
         currentLevels = []
@@ -604,11 +615,12 @@ tool =
                     ret.index  = index
                     ret.difficulty = difficulty
                     ret.success = true
+                    ret.levelInfo = "#{levelInfo}_#{puzzle.index}"
                     @_checkRepeatOnCreate(ret, levels, cfg.id, currentLevels)
         if currentLevels.length is 0
-            console.log("ERROR: level:#{cfg.id} difficult not match")
+            console.log("WARNING: level:#{cfg.id} difficult not match")
         niceLevels = @_checkStructureOnCreate(currentLevels, levels)
-        breakRules.push niceLevels
+
         goodLevel = undefined
         minNum = 100
         goodIndex = 0
@@ -624,11 +636,13 @@ tool =
                     minNum = level.breakStructureId
                     goodLevel = level
                     goodIndex = index
-        #niceLevels.splice(goodIndex, 1)
+        niceLevels.splice(goodIndex, 1)
+        @_delLevelFromBackUp(niceLevels)
+        backUpLevels.push niceLevels
 
         return goodLevel
 
-    _saveBreakRulesLevel: ->
+    _saveBackUpLevels: ->
         CONFIGS =
             id      : 0
             breakId1 : 1
@@ -649,7 +663,7 @@ tool =
         wstream = fs.createWriteStream "./output/level_#{language}_backup.csv"
         wstream.write titles.join(",") + "\n"
         count = 1
-        for table in breakRules
+        for table in backUpLevels
             for level in table
                 row = []
                 row.length = COLUMES
