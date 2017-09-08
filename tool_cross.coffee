@@ -520,24 +520,30 @@ tool =
         level.breakStructureId = ruleId
         currentLevels.push level
 
-    _dealLevel: (disCount, currentPuzzleLength, sameLengthWord, limit1, limit2, limit3, limit4, rulesId1, rulesId2)->
+    _dealLevel: (disCount, currentPuzzleLength, sameLengthWord, rulesId1, rulesId2)->
+        structureTable = tool.structure["" + rulesId1]
+        max1_sameletters1 = structureTable.max1_sameletters
+        max2_sameletters1 = structureTable.max2_sameletters
+        structureTable = tool.structure["" + rulesId2]
+        max1_sameletters2 = structureTable.max1_sameletters
+        max2_sameletters2 = structureTable.max2_sameletters
         switch disCount
             when 0
                 if 2 <= currentPuzzleLength <= 4
-                    if sameLengthWord > limit1
+                    if sameLengthWord > max1_sameletters1
                         DEBUG "error structure id #{rulesId1} - 1"
                         return rulesId1
                 if 5 <= currentPuzzleLength <= 8
-                    if sameLengthWord > limit2
+                    if sameLengthWord > max2_sameletters1
                         DEBUG "error structure id #{rulesId1} - 2"
                         return rulesId1
             when 1
                 if 2 <= currentPuzzleLength <= 4
-                    if sameLengthWord > limit3
+                    if sameLengthWord > max1_sameletters2
                         DEBUG "error structure id #{rulesId2} - 1"
                         return rulesId2
                 if 5 <= currentPuzzleLength <= 8
-                    if sameLengthWord > limit4
+                    if sameLengthWord > max2_sameletters2
                         DEBUG "error structure id #{rulesId2} - 2"
                         return rulesId2
         return -1
@@ -569,37 +575,19 @@ tool =
                     isEnd = false
                     break
                 if 1 <= levelIndex <= 2
-                    structureTable = tool.structure["9"]
-                    max1_sameletters1 = structureTable.max1_sameletters
-                    max2_sameletters1 = structureTable.max2_sameletters
-                    structureTable = tool.structure["8"]
-                    max1_sameletters2 = structureTable.max1_sameletters
-                    max2_sameletters2 = structureTable.max2_sameletters
-                    resultId = @_dealLevel(disCount, currentPuzzleLength, sameLengthWord, max1_sameletters1, max2_sameletters1, max1_sameletters2, max2_sameletters2, 9, 8)
+                    resultId = @_dealLevel(disCount, currentPuzzleLength, sameLengthWord, 9, 8)
                     if resultId isnt -1
                         @_saveBreakLevelWithStructureInfo(currentLevel, resultId, niceLevels)
                         isEnd = false
                         break
                 else if 3 <= levelIndex <= 5
-                    structureTable = tool.structure["6"]
-                    max1_sameletters1 = structureTable.max1_sameletters
-                    max2_sameletters1 = structureTable.max2_sameletters
-                    structureTable = tool.structure["5"]
-                    max1_sameletters2 = structureTable.max1_sameletters
-                    max2_sameletters2 = structureTable.max2_sameletters
-                    resultId = @_dealLevel(disCount, currentPuzzleLength, sameLengthWord, max1_sameletters1, max2_sameletters1, max1_sameletters2, max2_sameletters2, 6, 5)
+                    resultId = @_dealLevel(disCount, currentPuzzleLength, sameLengthWord, 6, 5)
                     if resultId isnt -1
                         @_saveBreakLevelWithStructureInfo(currentLevel, resultId, niceLevels)
                         isEnd = false
                         break
                 else if 6 <= levelIndex <= 10
-                    structureTable = tool.structure["3"]
-                    max1_sameletters1 = structureTable.max1_sameletters
-                    max2_sameletters1 = structureTable.max2_sameletters
-                    structureTable = tool.structure["2"]
-                    max1_sameletters2 = structureTable.max1_sameletters
-                    max2_sameletters2 = structureTable.max2_sameletters
-                    resultId = @_dealLevel(disCount, currentPuzzleLength, sameLengthWord, max1_sameletters1, max2_sameletters1, max1_sameletters2, max2_sameletters2, 3, 2)
+                    resultId = @_dealLevel(disCount, currentPuzzleLength, sameLengthWord, 3, 2)
                     if resultId isnt -1
                         @_saveBreakLevelWithStructureInfo(currentLevel, resultId, niceLevels)
                         isEnd = false
