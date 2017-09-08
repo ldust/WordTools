@@ -238,7 +238,8 @@ tool =
                 lowerWord = row[0].toLowerCase()
                 Hz[lowerWord] = index
             tool.hz = JSON.parse fs.readFileSync "./config/hz_#{language}.json", {encoding: "utf8"}
-            tool.len = JSON.parse fs.readFileSync "./config/word_difficult.json", {encoding: "utf8"}
+            tool.len = JSON.parse fs.readFileSync "./config/word_difficult_#{language}.json", {encoding: "utf8"}
+            tool.structure = JSON.parse fs.readFileSync "./config/structure_detect_#{language}.json", {encoding: "utf8"}
             callback?()
 
     _controlLevels: (match, levels, cache, id)->
@@ -568,19 +569,37 @@ tool =
                     isEnd = false
                     break
                 if 1 <= levelIndex <= 2
-                    resultId = @_dealLevel(disCount, currentPuzzleLength, sameLengthWord, 2, 4, 3, 5, 9, 8)
+                    structureTable = tool.structure["9"]
+                    max1_sameletters1 = structureTable.max1_sameletters
+                    max2_sameletters1 = structureTable.max2_sameletters
+                    structureTable = tool.structure["8"]
+                    max1_sameletters2 = structureTable.max1_sameletters
+                    max2_sameletters2 = structureTable.max2_sameletters
+                    resultId = @_dealLevel(disCount, currentPuzzleLength, sameLengthWord, max1_sameletters1, max2_sameletters1, max1_sameletters2, max2_sameletters2, 9, 8)
                     if resultId isnt -1
                         @_saveBreakLevelWithStructureInfo(currentLevel, resultId, niceLevels)
                         isEnd = false
                         break
                 else if 3 <= levelIndex <= 5
-                    resultId = @_dealLevel(disCount, currentPuzzleLength, sameLengthWord, 2, 4, 4, 6, 6, 5)
+                    structureTable = tool.structure["6"]
+                    max1_sameletters1 = structureTable.max1_sameletters
+                    max2_sameletters1 = structureTable.max2_sameletters
+                    structureTable = tool.structure["5"]
+                    max1_sameletters2 = structureTable.max1_sameletters
+                    max2_sameletters2 = structureTable.max2_sameletters
+                    resultId = @_dealLevel(disCount, currentPuzzleLength, sameLengthWord, max1_sameletters1, max2_sameletters1, max1_sameletters2, max2_sameletters2, 6, 5)
                     if resultId isnt -1
                         @_saveBreakLevelWithStructureInfo(currentLevel, resultId, niceLevels)
                         isEnd = false
                         break
                 else if 6 <= levelIndex <= 10
-                    resultId = @_dealLevel(disCount, currentPuzzleLength, sameLengthWord, 3, 5, 4, 6, 3, 2)
+                    structureTable = tool.structure["3"]
+                    max1_sameletters1 = structureTable.max1_sameletters
+                    max2_sameletters1 = structureTable.max2_sameletters
+                    structureTable = tool.structure["2"]
+                    max1_sameletters2 = structureTable.max1_sameletters
+                    max2_sameletters2 = structureTable.max2_sameletters
+                    resultId = @_dealLevel(disCount, currentPuzzleLength, sameLengthWord, max1_sameletters1, max2_sameletters1, max1_sameletters2, max2_sameletters2, 3, 2)
                     if resultId isnt -1
                         @_saveBreakLevelWithStructureInfo(currentLevel, resultId, niceLevels)
                         isEnd = false
