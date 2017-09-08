@@ -677,7 +677,7 @@ tool =
             ans     : 6
             ext     : 15
 
-        COLUMES     = 50
+        COLUMES     = 60
 
         titles = []
         titles.length = COLUMES
@@ -726,7 +726,7 @@ tool =
             ans     : 6
             ext     : 15
 
-        COLUMES     = 50
+        COLUMES     = 60
 
         titles = []
         titles.length = COLUMES
