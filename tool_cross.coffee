@@ -1213,8 +1213,6 @@ else if cmd is "info"
     tool.printAllChars()
 else if cmd is "repeat"
     tool.showRepeat()
-else if cmd is "add_cross_count"
-    tool.addCrossCount()
 else if cmd is "tool_json"
     tool.wordJsonExchange()
 else if cmd is "test"
@@ -1255,9 +1253,6 @@ else
 
     coffee tool_cross.coffee -c info -l ??
         使用关卡文件level_puzzle_out.csv，检测文件中重复的关卡，输出信息中每行代表同一组重复关卡号，同时输出每关用的字母
-
-    coffee tool_cross.coffee -c add_cross_count -l ??
-        输出已经生成好的level文件中单词交叉数,存在output/level_cross_count_??.csv文件中
 
     coffee tool_cross.coffee -c tool_json -l ??
         转换word_difficult_??.csv,structure_detect_??.csv为json格式
