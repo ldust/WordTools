@@ -54,7 +54,6 @@ else
 
 parseCsv = (path, callback)->
     data = fs.readFileSync path, {encoding: "utf8"}
-    console.log(path)
     parse data, {delimiter: ','}, (error, table)->
         throw new Error(error) if error?
         callback(table)
@@ -1156,6 +1155,17 @@ tool =
                 result = genCross(puzzle.ans, puzzle.add, puzzle.size, puzzle.size)
                 wstream.write [level, result.bn] + "\n"
             wstream.end()
+
+    wordJsonExchange: ->
+        parseCsv "tables/word_difficult_#{language}.csv", (table) ->
+            config = tool._parseConfig(table, true)
+            fs.writeFileSync "./config/word_difficult_#{language}.json", JSON.stringify config
+
+        parseCsv "tables/structure_detect_#{language}.csv", (table) ->
+            config = tool._parseConfig(table)
+            fs.writeFileSync "./config/structure_detect_#{language}.json", JSON.stringify config
+        console.log("JSON转换完成!")
+
 if cmd is "run"
     async.series [ 
         tool.prepareLevel, 
@@ -1187,15 +1197,7 @@ else if cmd is "repeat"
 else if cmd is "add_cross_count"
     tool.addCrossCount()
 else if cmd is "tool_json"
-    parseCsv "tables/word_difficult.csv", (table) ->
-        config = tool._parseConfig(table, true)
-        fs.writeFileSync "./config/word_difficult.json", JSON.stringify config
-
-    parseCsv "tables/structure_detect.csv", (table) ->
-        config = tool._parseConfig(table)
-        fs.writeFileSync "./config/structure_detect.json", JSON.stringify config
-    console.log("JSON转换完成!")
-
+    tool.wordJsonExchange()
 else if cmd is "test"
     puzzle1 = [ 'hose', 'hove', 'shoe', 'shove' ]
     puzzle2 = [ 'cane', 'cone', 'once', 'canoe', 'ocean', 'ounce' ]
@@ -1237,6 +1239,9 @@ else
 
     coffee tool_cross.coffee -c add_cross_count -l ??
         输出已经生成好的level文件中单词交叉数,存在output/level_cross_count_??.csv文件中
+
+    coffee tool_cross.coffee -c tool_json -l ??
+        转换word_difficult_??.csv,structure_detect_??.csv为json格式
 
     注意: 如果要使用google 上面的文件 ,
         第一步: 将文件放在 /tables/level_puzzle_out_??.csv"
