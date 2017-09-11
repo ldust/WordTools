@@ -9,16 +9,17 @@ gtrends = require 'google-trends-api'
 cmd     = argv.c
 mode    = argv.m
 
+mode ?= "word"
+
 WORD_FILE_PATH          = "./tables/level_words.csv"
 PUZZLE_FILE_PATH        = "./tables/level_puzzle_out.csv"
-BIG_WORD_LISH_PATH      = "./tables/big_word_list.csv"
+BIG_WORD_LISH_PATH      = "./tables/big_word_list_#{mode}.csv"
 RAW_BIG_WORD_LISH_PATH  = "./tables/raw_big_word_list.csv"
 RAW_WORD_FILE_PATH      = "./tables/raw_level_words.csv"
 LEVEL_ALPHABAT_PATH     = "./tables/level_alphabet.csv"
 DICTIONARY_PATH         = "./tables/dictionary_ge.csv"
-WORD_LIST_PATH         = "./tables/word_list.csv"
-
-mode ?= "word"
+WORD_LIST_PATH          = "./tables/word_list.csv"
+EXCHANGE_LISH_PATH      = "./tables/exchange_#{mode}.csv"
 CHALLENGE_LISH_PATH     = "./tables/challenge_puzzle_#{mode}.json"
 
 ChallengeTool           = require "./gen_challenge"
@@ -27,6 +28,20 @@ Dict                    = {}
 PATTERN_INDEX           = 3
 ANS_START_INDEX         = 4
 EXTRA_START_INDEX       = 100
+
+
+CHAR_FILTER_WORD5 = ["À", "Â", "Ä", "Æ", "Ç", "È", "É", "Ê", "Ë", "Î", "Ï", "Ô", "Ö", "Œ", "Ù", "Û", "Ü", "Ÿ"]
+
+
+CHAR_FILTER = 
+    word: []
+    word4: ["Ä", "Ö", "ß", "Ü"]
+    word5: ["À", "Â", "Ä", "Æ", "Ç", "È", "É", "Ê", "Ë", "Î", "Ï", "Ô", "Ö", "Œ", "Ù", "Û", "Ü", "Ÿ"]
+    word8: ["Á", "À", "Â", "Ã", "Ç", "É", "Ê", "Í", "Ó" ,"Ô", "Õ", "Ú", "Ü"]
+    word9: ["Á", "À", "Â", "Ã", "Ç", "É", "Ê", "Í", "Ó", "Ô", "Õ", "Ú", "Ü", "Ñ"]
+
+NORMAL_FILTER = "QWERTYUIOPASDFGHJKLZXCVBNM"
+
 
 parseCsv = (path, callback)->
     data = fs.readFileSync path, {encoding: "utf8"}
@@ -54,6 +69,33 @@ tool =
                 continue if word.length < 2 or word.length > 8
                 wstream.write word.toLowerCase() + "\n"
             wstream.end()
+        return
+
+    filterBigWordList: ->
+        parseCsv BIG_WORD_LISH_PATH, (table) ->
+            noFoundChar = []
+            count = 0
+            noFoundWordTable = []
+            for row in table
+                word = row[0]
+                continue if word.length < 2 or word.length > 8
+
+                hasNoFoundChar = false
+                upperCaseWord = tool.toUpperCase(word)#.toUpperCase()
+                for c in upperCaseWord
+                    if NORMAL_FILTER.indexOf(c) is -1 and c not in CHAR_FILTER[mode]
+                        count += 1
+                        if c not in noFoundChar
+                            noFoundChar.push c
+                        hasNoFoundChar = true
+                        row.push "\n"
+                        noFoundWordTable.push row
+                        break
+                continue if hasNoFoundChar
+                # row.push "\n"
+                # noFoundWordTable.push row
+            fs.writeFileSync "wrong_word_#{mode}.csv", noFoundWordTable
+            console.log "noFoundChar:", JSON.stringify(noFoundChar), "count: ", count
         return
 
     addWordListContainedByMainWordAndOtherChar: (mainWord, add, max) ->
@@ -188,6 +230,12 @@ tool =
 
     genDict: ()->
         parseCsv(BIG_WORD_LISH_PATH, ChallengeTool.genWordListBySize(CHALLENGE_LISH_PATH))
+
+    checkbigWordList: ->
+        parseCsv(BIG_WORD_LISH_PATH, tool.filterBigWordList)
+
+    genDictWithFilter: ()->
+        parseCsv(EXCHANGE_LISH_PATH, ChallengeTool.getWordInExchangeList(tool.genDict))
 
     allChars: (words) ->
         charMaps = []
@@ -610,6 +658,8 @@ tool =
 
 if cmd is "extra"
     tool.fillExtra()
+else if cmd is "check_big_wordlist"
+    tool.checkbigWordList()
 else if cmd is "prepare_extra"
     tool.filterBigTable()
 else if cmd is "prepare_level"
@@ -635,6 +685,10 @@ else if cmd is "frequency"
     tool.showFrequency()
 else if cmd is "repeat_in_one_level"
     tool.showRepeatWordsInCurrentLevel()
+else if cmd is "easy_gen_challenge"
+    ChallengeTool.easyGenChallengePuzzle(CHALLENGE_LISH_PATH)
+else if cmd is "gen_challenge_filter"
+    tool.genDictWithFilter()
 else
     str = """
     raw_big_word_list.csv -> 大词库

@@ -9,27 +9,49 @@ fs                      = require 'fs'
 zim                     = require './ZimUtils'
 daily_challenge_stage   = null
 game_config             = null
+WordInExchangeList      = []
 
 tool = 
+    toUpperCase: (word)->
+        wordUpperCase = ""
+        for c in word
+            wordUpperCase += c if c is "ß"
+            wordUpperCase += c.toUpperCase() if c isnt "ß"
+        return wordUpperCase
+
     genWordListBySize: (file)->
         (table)->
+            console.log(JSON.stringify(table))
             for row, rowIndex in table
+
                 continue if rowIndex is 0
                 for word, index in row
                     continue if word.length is 0 
                     Dict[word.length] ?= []
-                    Dict[word.length].push word.toUpperCase()
+                    Dict[word.length].push tool.toUpperCase(word)
             tool.genAnsDict()
             tool.genChallengePuzzle(file)
             return
 
+    getWordInExchangeList: (cb)->
+        (table) ->
+            for row, rowIndex in table
+                for word in row
+                    WordInExchangeList.push tool.toUpperCase(word)
+            cb()
+
+    easyGenChallengePuzzle: (file)->
+        tool.genChallengePuzzle(file)
+
     addWordListContainedByMainWord: (mainWord, max, min)->
         ansList = []
+        return ansList if mainWord in WordInExchangeList
         for wordSize in [min..max]
             if Dict[String(wordSize)]?
                 for word in Dict[String(wordSize)]
                     continue if word in ansList
                     if zim.contain(mainWord, word)
+                        return [] if word in WordInExchangeList
                         ansList.push word
         return ansList
 
@@ -52,9 +74,13 @@ tool =
         Puzzles = JSON.parse(fs.readFileSync(WORD_DICT_PATH, {encoding: "utf8"}))
         tool.createPuzzleByTwoYear(file)
 
+
     createPuzzleByTwoYear: (file)->
         years = [2017, 2018]
         allPuzzles = {}
+
+        forReadData = [[]]
+
         for year in years
             for month in [tool.getMonthStartOfYear(year)..11]
                 console.log("year: #{year} month: #{month + 1}")
@@ -63,8 +89,24 @@ tool =
                     date = new Date(year, month, day)
                     puzzles = tool.createPuzzles(date)
                     allPuzzles[tool.getYMDString(date)] = puzzles
+
+                    tool.genCsvData(forReadData, date, puzzles)
+
+        console.log("#{JSON.stringify(forReadData)}")
         fs.writeFileSync(file, JSON.stringify(allPuzzles))
+        fs.writeFileSync(file + ".csv", (forReadData))
         return
+
+
+    genCsvData: (forReadData, date, puzzles)->
+        for puzzle, index in puzzles
+            arr = []
+            arr.push tool.getYMDString(date) + "--#{index + 1}"
+            arr.push item for item in puzzle.puzzle.ans
+            arr.push "\n"
+            forReadData.push arr
+        return
+
 
     getMonthStartOfYear: (year)->
         if year is 2017
@@ -134,10 +176,13 @@ tool =
         validMainWordList = tool.findAllValidPuzzle(dailyChallengeStage, lv)
         return if validMainWordList.length is 0
         index = Math.floor(tool.random() * (validMainWordList.length - 1))
-
         puzzleWordList = Puzzles[validMainWordList[index]]
         puzzleWordList.push validMainWordList[index]
-        wordArr = puzzleWordList.map((item)->item.toUpperCase())
+
+
+        #console.log "lishuaiyuan validMainWordList : #{validMainWordList.length} lv: #{lv}"
+
+        wordArr = puzzleWordList.map((item)->tool.toUpperCase(item))
         shortestLen = dailyChallengeStage.clear_short_word_num
         wordArr = wordArr.filter((item)->item.length >= shortestLen)
 
